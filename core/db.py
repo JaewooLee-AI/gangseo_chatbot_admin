@@ -82,6 +82,7 @@ class MockQueryBuilder:
                         "email": "welfare.kim@gangseo.go.kr",
                         "department": "민원상담팀",
                         "is_active": True,
+                        "is_admin": True,
                         "created_at": (datetime.datetime.now() - datetime.timedelta(days=10)).isoformat()
                     },
                     {
@@ -90,6 +91,7 @@ class MockQueryBuilder:
                         "email": "care.lee@gangseo.go.kr",
                         "department": "긴급돌봄팀",
                         "is_active": True,
+                        "is_admin": False,
                         "created_at": (datetime.datetime.now() - datetime.timedelta(days=5)).isoformat()
                     }
                 ],

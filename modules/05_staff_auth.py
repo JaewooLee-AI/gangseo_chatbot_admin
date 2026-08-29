@@ -151,9 +151,10 @@ def render():
             with st.form("staff_registration_form", clear_on_submit=True):
                 new_name = st.text_input("직원 성명", placeholder="예: 홍길동")
                 new_email = st.text_input("직원 이메일 (인증코드 발송용)", placeholder="example@gangseo.go.kr")
-                
+
                 dept = st.selectbox("소속 부서/팀", ["민원상담팀", "요금정산팀", "긴급돌봄팀", "센터관리팀"])
-                
+                grant_admin = st.checkbox("🔐 이 Streamlit 최고 관리자 대시보드 로그인 권한도 부여", value=False)
+
                 submit_staff = st.form_submit_button("✅ 화이트리스트 계정 추가")
 
             if submit_staff:
@@ -185,7 +186,8 @@ def render():
                                 supabase.table("staff_users").insert({
                                     "staff_name": new_name.strip(),
                                     "email": new_email.strip(),
-                                    "department": dept
+                                    "department": dept,
+                                    "is_admin": grant_admin
                                 }).execute()
                                 st.success(f"✅ '{new_name}' ({new_email}) 직원이 화이트리스트에 성공적으로 등록되었습니다. (로그인 계정도 함께 생성됨)")
                                 st.rerun()
@@ -197,20 +199,23 @@ def render():
         with col_list:
             st.subheader("📋 현재 등록된 실무 담당자 명부")
             
-            res = supabase.table("staff_users").select("id, staff_name, email, department, created_at").execute()
+            res = supabase.table("staff_users").select("id, staff_name, email, department, is_admin, created_at").execute()
             staff_data = res.data if res.data else []
 
             if staff_data:
                 df_staff = pd.DataFrame(staff_data)
                 if "department" not in df_staff.columns:
                     df_staff["department"] = "-"
+                if "is_admin" not in df_staff.columns:
+                    df_staff["is_admin"] = False
+                df_staff["is_admin"] = df_staff["is_admin"].fillna(False)
                 df_staff.insert(0, "삭제", False)
 
                 st.markdown(f"**총 등록 인원:** `{len(df_staff)}명`")
-                st.caption("삭제할 계정의 체크박스를 선택한 뒤 아래 버튼을 눌러 한 번에 삭제할 수 있습니다.")
+                st.caption("최고 관리자 권한(Streamlit 로그인)은 체크박스로 즉시 변경되며, 삭제는 아래 버튼으로 별도 처리합니다.")
 
                 edited_df = st.data_editor(
-                    df_staff[['삭제', 'staff_name', 'email', 'department', 'created_at']],
+                    df_staff[['삭제', 'staff_name', 'email', 'department', 'is_admin', 'created_at']],
                     use_container_width=True,
                     hide_index=True,
                     disabled=['staff_name', 'email', 'department', 'created_at'],
@@ -219,10 +224,18 @@ def render():
                         "staff_name": st.column_config.TextColumn("직원 성명", width="medium"),
                         "email": st.column_config.TextColumn("인증 이메일 주소", width="large"),
                         "department": st.column_config.TextColumn("소속 부서/팀", width="small"),
+                        "is_admin": st.column_config.CheckboxColumn("🔐 최고관리자", help="이 Streamlit 대시보드 로그인 권한"),
                         "created_at": st.column_config.TextColumn("등록 일시", width="small")
                     },
                     key="staff_editor"
                 )
+
+                changed_admin_rows = edited_df[edited_df["is_admin"] != df_staff["is_admin"]]
+                if not changed_admin_rows.empty and st.button("💾 최고관리자 권한 변경사항 저장", use_container_width=True):
+                    for _, row in changed_admin_rows.iterrows():
+                        supabase.table("staff_users").update({"is_admin": bool(row["is_admin"])}).eq("email", row["email"]).execute()
+                    st.success(f"✅ {len(changed_admin_rows)}건의 최고관리자 권한이 변경되었습니다.")
+                    st.rerun()
 
                 st.divider()
                 st.subheader("🚫 접근 권한 즉시 회수")

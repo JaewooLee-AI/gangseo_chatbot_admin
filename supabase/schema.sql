@@ -65,12 +65,15 @@ create table if not exists staff_users (
     email varchar(255) not null unique,
     department varchar(50),
     is_active boolean not null default true,
+    is_admin boolean not null default false,
     created_at timestamptz not null default now()
 );
 
 -- 기존에 department 컬럼 없이 생성되어 있던 경우를 위한 안전 보강
 alter table staff_users add column if not exists department varchar(50);
 alter table staff_users add column if not exists is_active boolean not null default true;
+-- is_admin = true인 계정만 이 Streamlit 최고관리자 대시보드에 로그인할 수 있다(담당자 웹앱 접근 권한과는 별개).
+alter table staff_users add column if not exists is_admin boolean not null default false;
 
 -- ------------------------------------------------------------
 -- 5. 담당자 전달 문의 (챗봇 -> 담당자 웹앱 핵심 워크플로우)

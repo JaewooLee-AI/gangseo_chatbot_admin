@@ -1,5 +1,8 @@
 .streamlit/secrets.toml
+*.swp
 __pycache__/
 *.pyc
 .DS_Store
 venv/
+.playwright-mcp/
+supabase/.temp/

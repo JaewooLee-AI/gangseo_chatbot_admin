@@ -25,13 +25,25 @@ pip install -r requirements.txt
 
 ```toml
 SUPABASE_URL = "https://your-supabase-project-id.supabase.co"
-SUPABASE_KEY = "your-supabase-anon-or-service-role-key"
+SUPABASE_KEY = "your-supabase-service-role-key"
+
+# 최고 관리자 로그인(이메일 OTP) 전용 anon 키. service_role 키는 로그인 화면에서 사용하지 않는다.
+SUPABASE_ANON_KEY = "your-supabase-anon-key"
 
 QWEN_API_KEY = "sk-xxx"
 OPENAI_API_KEY = "sk-xxx"
 ```
 
-> **참고:** `.streamlit/secrets.toml`에 Supabase 설정이 없더라도, 애플리케이션은 **세션 기반 Mock DB 모드**로 자동 실행되어 즉시 UI 및 모든 기능을 테스트할 수 있습니다.
+> **참고:** `.streamlit/secrets.toml`에 Supabase 설정이 없더라도, 애플리케이션은 **세션 기반 Mock DB 모드**로 자동 실행되어 즉시 UI 및 모든 기능을 테스트할 수 있습니다(이 모드에서는 로그인도 아무 이메일 + 6자리 숫자로 통과됩니다).
+
+### 🔐 최고 관리자 로그인 (Streamlit Cloud 공개 배포 대응)
+
+Streamlit Cloud에 배포하면 URL을 아는 누구나 접근할 수 있으므로, 이 대시보드는 `../gangseo_chatbot_cs`(담당자 전용 웹앱)와 동일한 **Supabase Auth 이메일 OTP** 방식으로 최상단에 로그인 게이트를 둡니다(`app.py`, `core/auth.py`).
+
+- 담당자 웹앱의 `staff_users` 화이트리스트를 그대로 재사용하되, `is_admin` 컬럼이 `true`인 계정만 이 Streamlit 대시보드에 로그인할 수 있습니다(일반 CS 담당자와 최고 관리자 권한을 분리).
+- `👥 직원 계정 관리` 모듈에서 신규 등록 시 "최고 관리자 권한 부여" 체크박스로, 또는 기존 명부의 `🔐 최고관리자` 체크박스로 권한을 즉시 부여/회수할 수 있습니다.
+- OTP 발송/검증은 `SUPABASE_ANON_KEY`로 만든 임시 클라이언트로만 처리하고, `service_role` 키(`SUPABASE_KEY`)를 쓰는 전역 데이터 클라이언트와는 분리되어 있습니다.
+- 로그인 상태는 `st.session_state`에만 저장됩니다. 즉 새로고침(F5)이나 새 탭에서는 다시 로그인해야 합니다(세션 지속을 위한 쿠키 저장소는 아직 붙이지 않음).
 
 ### 3. Streamlit 통제반 실행
 
