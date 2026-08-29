@@ -1,0 +1,95 @@
+- generic [ref=f10e1]:
+  - banner [ref=f10e2]:
+    - button "Deploy" [ref=f10e9] [cursor=pointer]
+  - generic [ref=f10e4]:
+    - button [ref=f10e14] [cursor=pointer]
+    - generic [ref=f10e19]:
+      - button [ref=f10e213] [cursor=pointer]
+      - generic [ref=f10e24]:
+        - generic [ref=f10e28]:
+          - generic [ref=f10e29]: SYSTEM CONTROL
+          - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f10e30]
+          - paragraph [ref=f10e31]: AI RAG 통제반 v2.0
+        - generic [ref=f10e33]:
+          - paragraph [ref=f10e36] [cursor=pointer]: 통제반 메인 메뉴
+          - radiogroup "통제반 메인 메뉴" [ref=f10e37] [cursor=pointer]:
+            - generic [ref=f10e38]:
+              - radio "📊 RAG 데이터 파이프라인"
+              - paragraph [ref=f10e43]: 📊 RAG 데이터 파이프라인
+            - generic [ref=f10e44]:
+              - radio "🧠 HITL 오답 리뷰"
+              - paragraph [ref=f10e49]: 🧠 HITL 오답 리뷰
+            - generic [ref=f10e50]:
+              - radio "⚙️ AI 페르소나 및 보안 설정"
+              - paragraph [ref=f10e55]: ⚙️ AI 페르소나 및 보안 설정
+            - generic [ref=f10e56]:
+              - radio "🔑 LLM API 관리"
+              - paragraph [ref=f10e61]: 🔑 LLM API 관리
+            - generic [ref=f10e62]:
+              - radio "👥 직원 계정 관리" [checked] [active]
+              - paragraph [ref=f10e67]: 👥 직원 계정 관리
+            - generic [ref=f10e68]:
+              - radio "🤖 RAG 챗봇 시뮬레이터"
+              - paragraph [ref=f10e73]: 🤖 RAG 챗봇 시뮬레이터
+        - separator [ref=f10e77]
+        - alert [ref=f10e80]:
+          - paragraph [ref=f10e85]:
+            - text: 🟢
+            - strong [ref=f10e86]: "DB 상태:"
+            - text: Supabase pgvector Live Connection
+        - paragraph [ref=f10e90]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f10e94]:
+      - generic [ref=f10e98]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f10e100]
+        - paragraph [ref=f10e102]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=f10e103]: MODULE 05
+      - heading "👥 직원 계정 및 접수 문의 관리" [level=1] [ref=f10e217]
+      - paragraph [ref=f10e116]:
+        - text: Vercel CS 웹앱 접근용
+        - strong [ref=f10e218]: 직원 화이트리스트 계정
+        - text: 관리 및 챗봇에서 이관된
+        - strong [ref=f10e219]: 담당자 전달 메시지/콜백 접수건
+        - text: 을 조회하고 처리합니다.
+      - separator [ref=f10e120]
+      - generic [ref=f10e221]:
+        - tablist [ref=f10e223]:
+          - tab [selected] [ref=f10e224] [cursor=pointer]:
+            - paragraph [ref=f10e226]: 📥 미처리 담당자 전달 메시지 관리 (Supabase 접수건)
+          - tab [ref=f10e227] [cursor=pointer]:
+            - paragraph [ref=f10e229]: 👥 직원 화이트리스트 계정 관리
+        - tabpanel "📥 미처리 담당자 전달 메시지 관리 (Supabase 접수건)" [ref=f10e232]:
+          - generic [ref=f10e234]:
+            - heading "📥 챗봇 전달 메시지 및 콜백 접수 현황" [level=3] [ref=f10e239]
+            - paragraph [ref=f10e244]: 챗봇 이용 중 대화가 만족스럽지 않거나 직접 문의를 남긴 사용자의 AI 추출 연락처 및 문의 내용입니다.
+            - generic [ref=f10e245]:
+              - generic [ref=f10e250]:
+                - paragraph [ref=f10e254]: 🔴 미처리 접수 건수
+                - generic [ref=f10e255]: 3건
+              - generic [ref=f10e261]:
+                - paragraph [ref=f10e265]: 🟢 상담 처리 완료
+                - generic [ref=f10e266]: 0건
+              - generic [ref=f10e272]:
+                - paragraph [ref=f10e276]: 📱 전체 접수 누적
+                - generic [ref=f10e277]: 3건
+            - separator [ref=f10e282]
+            - generic [ref=f10e284]:
+              - paragraph [ref=f10e287]: 📂 카테고리로 필터링
+              - generic [ref=f10e289]:
+                - generic [ref=f10e290]:
+                  - generic [ref=f10e291]: 전체
+                  - combobox "Selected 전체. 📂 카테고리로 필터링" [ref=f10e293]
+                - img "open" [ref=f10e295]
+            - heading "📋 미처리 접수 목록 (우선 연락 필요)" [level=3] [ref=f10e301]
+      - alert [ref=f10e305]:
+        - generic [ref=f10e308]:
+          - generic [ref=f10e309]: "TypeError: 'NoneType' object is not subscriptable"
+          - generic [ref=f10e310]:
+            - generic [ref=f10e311]: "Traceback:"
+            - code [ref=f10e314]:
+              - generic [ref=f10e315]: File "/Users/jwlee/project/gangseo_chatbot_admin/app.py", line 71, in <module> mod.render() ~~~~~~~~~~^^
+              - generic [ref=f10e316]: "File \"/Users/jwlee/project/gangseo_chatbot_admin/modules/05_staff_auth.py\", line 65, in render with st.expander(f\"🔴 [{created_at}] [{category}] [{type_badge}] {user_name} ({contact_info}) - {summary[:30]}...\", expanded=(idx == 0)): ~~~~~~~^^^^^"
+          - generic [ref=f10e317]:
+            - link "Ask Google" [ref=f10e318] [cursor=pointer]:
+              - /url: https://www.google.com/search?q=TypeError%3A%20'NoneType'%20object%20is%20not%20subscriptable
+            - link "Ask ChatGPT" [ref=f10e319] [cursor=pointer]:
+              - /url: https://chatgpt.com/?q=TypeError%3A%20'NoneType'%20object%20is%20not%20subscriptable%0A%0AFile%20%22%2FUsers%2Fjwlee%2Fproject%2Fgangseo_chatbot_admin%2Fapp.py%22%2C%20line%2071%2C%20in%20%3Cmodule%3E%0A%20%20%20%20mod.render()%0A%20%20%20%20~~~~~~~~~~%5E%5E%0AFile%20%22%2FUsers%2Fjwlee%2Fproject%2Fgangseo_chatbot_admin%2Fmodules%2F05_staff_auth.py%22%2C%20line%2065%2C%20in%20render%0A%20%20%20%20with%20st.expander(f%22%F0%9F%94%B4%20%5B%7Bcreated_at%7D%5D%20%5B%7Bcategory%7D%5D%20%5B%7Btype_badge%7D%5D%20%7Buser_name%7D%20(%7Bcontact_info%7D)%20-%20%7Bsummary%5B%3A30%5D%7D...%22%2C%20expanded%3D(idx%20%3D%3D%200))%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20~~~~~~~%5E%5E%5E%5E%5E

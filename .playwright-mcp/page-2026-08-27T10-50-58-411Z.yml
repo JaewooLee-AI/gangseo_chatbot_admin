@@ -1,0 +1,86 @@
+- generic [ref=f11e1]:
+  - banner [ref=f11e2]:
+    - button "Deploy" [ref=f11e9] [cursor=pointer]
+  - generic [ref=f11e4]:
+    - button [ref=f11e14] [cursor=pointer]
+    - generic [ref=f11e19]:
+      - button [ref=f11e213] [cursor=pointer]
+      - generic [ref=f11e24]:
+        - generic [ref=f11e28]:
+          - generic [ref=f11e29]: SYSTEM CONTROL
+          - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f11e30]
+          - paragraph [ref=f11e31]: AI RAG 통제반 v2.0
+        - generic [ref=f11e33]:
+          - paragraph [ref=f11e36] [cursor=pointer]: 통제반 메인 메뉴
+          - radiogroup "통제반 메인 메뉴" [ref=f11e37] [cursor=pointer]:
+            - generic [ref=f11e38]:
+              - radio "📊 RAG 데이터 파이프라인"
+              - paragraph [ref=f11e43]: 📊 RAG 데이터 파이프라인
+            - generic [ref=f11e44]:
+              - radio "🧠 HITL 오답 리뷰"
+              - paragraph [ref=f11e49]: 🧠 HITL 오답 리뷰
+            - generic [ref=f11e50]:
+              - radio "⚙️ AI 페르소나 및 보안 설정"
+              - paragraph [ref=f11e55]: ⚙️ AI 페르소나 및 보안 설정
+            - generic [ref=f11e56]:
+              - radio "🔑 LLM API 관리"
+              - paragraph [ref=f11e61]: 🔑 LLM API 관리
+            - generic [ref=f11e62]:
+              - radio "👥 직원 계정 관리" [checked] [active]
+              - paragraph [ref=f11e67]: 👥 직원 계정 관리
+            - generic [ref=f11e68]:
+              - radio "🤖 RAG 챗봇 시뮬레이터"
+              - paragraph [ref=f11e73]: 🤖 RAG 챗봇 시뮬레이터
+        - separator [ref=f11e77]
+        - alert [ref=f11e80]:
+          - paragraph [ref=f11e85]:
+            - text: 🟢
+            - strong [ref=f11e86]: "DB 상태:"
+            - text: Supabase pgvector Live Connection
+        - paragraph [ref=f11e90]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f11e94]:
+      - generic [ref=f11e98]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f11e100]
+        - paragraph [ref=f11e102]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=f11e103]: MODULE 05
+      - heading "👥 직원 계정 및 접수 문의 관리" [level=1] [ref=f11e217]
+      - paragraph [ref=f11e116]:
+        - text: Vercel CS 웹앱 접근용
+        - strong [ref=f11e218]: 직원 화이트리스트 계정
+        - text: 관리 및 챗봇에서 이관된
+        - strong [ref=f11e219]: 담당자 전달 메시지/콜백 접수건
+        - text: 을 조회하고 처리합니다.
+      - separator [ref=f11e120]
+      - generic [ref=f11e221]:
+        - tablist [ref=f11e223]:
+          - tab [selected] [ref=f11e224] [cursor=pointer]:
+            - paragraph [ref=f11e226]: 📥 미처리 담당자 전달 메시지 관리 (Supabase 접수건)
+          - tab [ref=f11e227] [cursor=pointer]:
+            - paragraph [ref=f11e229]: 👥 직원 화이트리스트 계정 관리
+        - tabpanel "📥 미처리 담당자 전달 메시지 관리 (Supabase 접수건)" [ref=f11e232]:
+          - generic [ref=f11e234]:
+            - heading "📥 챗봇 전달 메시지 및 콜백 접수 현황" [level=3] [ref=f11e239]
+            - paragraph [ref=f11e244]: 챗봇 이용 중 대화가 만족스럽지 않거나 직접 문의를 남긴 사용자의 AI 추출 연락처 및 문의 내용입니다.
+            - generic [ref=f11e245]:
+              - generic [ref=f11e250]:
+                - paragraph [ref=f11e254]: 🔴 미처리 접수 건수
+                - generic [ref=f11e255]: 0건
+              - generic [ref=f11e261]:
+                - paragraph [ref=f11e265]: 🟢 상담 처리 완료
+                - generic [ref=f11e266]: 0건
+              - generic [ref=f11e272]:
+                - paragraph [ref=f11e276]: 📱 전체 접수 누적
+                - generic [ref=f11e277]: 0건
+            - separator [ref=f11e282]
+            - generic [ref=f11e284]:
+              - paragraph [ref=f11e287]: 📂 카테고리로 필터링
+              - generic [ref=f11e289]:
+                - generic [ref=f11e290]:
+                  - generic [ref=f11e291]: 전체
+                  - combobox "Selected 전체. 📂 카테고리로 필터링" [ref=f11e293]
+                - img "open" [ref=f11e295]
+            - alert [ref=f11e299]:
+              - paragraph [ref=f11e304]: 🎉 현재 처리 대기 중인 담당자 전달 메시지가 없습니다.
+            - separator [ref=f11e308]
+            - group [ref=f11e310]:
+              - paragraph [ref=f11e314] [cursor=pointer]: 📚 상담 완료 처리된 이력 보기

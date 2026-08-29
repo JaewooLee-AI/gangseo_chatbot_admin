@@ -1,0 +1,33 @@
+- generic [ref=f2e1]:
+  - generic [ref=f2e2]:
+    - banner [ref=f2e3]:
+      - button "메뉴" [ref=f2e4] [cursor=pointer]:
+        - generic [ref=f2e5]: menu
+      - generic [ref=f2e6]:
+        - generic [ref=f2e7]: robot_2
+        - heading "강서나눔돌봄센터" [level=1] [ref=f2e9]
+      - button "상담연결" [ref=f2e10] [cursor=pointer]
+    - main [ref=f2e11]:
+      - generic [ref=f2e12]: 오늘
+      - generic [ref=f2e17]:
+        - generic [ref=f2e18]: robot_2
+        - generic [ref=f2e20]:
+          - generic [ref=f2e21]: AI 어시스턴트
+          - generic [ref=f2e22]:
+            - generic [ref=f2e23]: 안녕하세요. 강서나눔돌봄센터 AI 어시스턴트입니다. 무엇을 도와드릴까요?
+            - generic [ref=f2e24]:
+              - button "도움이 됨" [ref=f2e25] [cursor=pointer]:
+                - generic [ref=f2e26]: thumb_up
+              - button "도움이 안됨" [ref=f2e27] [cursor=pointer]:
+                - generic [ref=f2e28]: thumb_down
+      - button "support_agent 담당자에게 메시지 남기기" [ref=f2e30] [cursor=pointer]:
+        - generic [ref=f2e31]: support_agent
+        - text: 담당자에게 메시지 남기기
+    - generic [ref=f2e34]:
+      - button "음성 입력 시작" [ref=f2e35] [cursor=pointer]:
+        - generic [ref=f2e36]: mic
+      - generic [ref=f2e37]:
+        - textbox "메시지를 입력하세요..." [active] [ref=f2e38]: 테스트 메시지
+        - button "전송" [ref=f2e39] [cursor=pointer]:
+          - generic [ref=f2e40]: send
+  - alert [ref=f2e41]

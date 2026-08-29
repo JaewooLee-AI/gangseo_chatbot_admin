@@ -1,0 +1,103 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - button "Deploy" [ref=e9] [cursor=pointer]
+  - generic [ref=e4]:
+    - button [ref=e14] [cursor=pointer]
+    - generic [ref=e24]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: SYSTEM CONTROL
+        - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=e30]
+        - paragraph [ref=e31]: AI RAG 통제반 v2.0
+      - generic [ref=e33]:
+        - paragraph [ref=e36] [cursor=pointer]: 통제반 메인 메뉴
+        - radiogroup "통제반 메인 메뉴" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]:
+            - radio "📊 RAG 데이터 파이프라인" [checked]
+            - paragraph [ref=e43]: 📊 RAG 데이터 파이프라인
+          - generic [ref=e44]:
+            - radio "🧠 HITL 오답 리뷰"
+            - paragraph [ref=e49]: 🧠 HITL 오답 리뷰
+          - generic [ref=e50]:
+            - radio "⚙️ AI 페르소나 및 보안 설정"
+            - paragraph [ref=e55]: ⚙️ AI 페르소나 및 보안 설정
+          - generic [ref=e56]:
+            - radio "🔑 LLM API 관리"
+            - paragraph [ref=e61]: 🔑 LLM API 관리
+          - generic [ref=e62]:
+            - radio "👥 직원 계정 관리"
+            - paragraph [ref=e67]: 👥 직원 계정 관리
+          - generic [ref=e68]:
+            - radio "🤖 RAG 챗봇 시뮬레이터"
+            - paragraph [ref=e73]: 🤖 RAG 챗봇 시뮬레이터
+      - separator [ref=e77]
+      - alert [ref=e80]:
+        - paragraph [ref=e85]:
+          - text: 🟢
+          - strong [ref=e86]: "DB 상태:"
+          - text: Supabase pgvector Live Connection
+      - paragraph [ref=e90]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=e94]:
+      - generic [ref=e98]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=e100]
+        - paragraph [ref=e102]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=e103]: MODULE 01
+      - heading "📊 RAG 데이터 파이프라인 및 시각화" [level=1] [ref=e111]
+      - paragraph [ref=e116]: 신규 문서를 업로드하여 벡터 DB에 색인하고, 자동 분할된 데이터 청크(Chunk)를 엑셀처럼 수동 결합 및 재학습(Re-embed)할 수 있습니다.
+      - separator [ref=e120]
+      - generic [ref=e121]:
+        - generic [ref=e124]:
+          - heading "📌 신규 지식 문서 업로드" [level=3] [ref=e129]
+          - paragraph [ref=e134]:
+            - text: 지식 오염 방지를 위해 문서 업로드 시
+            - strong [ref=e135]: 카테고리 메타데이터
+            - text: 를 반드시 지정해야 합니다.
+          - generic [ref=e138]:
+            - generic [ref=e140]:
+              - paragraph [ref=e143]: 📌 메타데이터 카테고리 선택 (PDF/TXT 필수 · Excel은 시트명으로 자동 대체)
+              - generic [ref=e145]:
+                - generic [ref=e146]:
+                  - generic [ref=e147]: 선택 안 함
+                  - combobox "Selected 선택 안 함. 📌 메타데이터 카테고리 선택 (PDF/TXT 필수 · Excel은 시트명으로 자동 대체)" [ref=e149]
+                - img "open" [ref=e151]
+            - generic [ref=e155]:
+              - paragraph [ref=e158]: 문서 업로드 (PDF, TXT, Excel/XLSX)
+              - region "문서 업로드 (PDF, TXT, Excel/XLSX)" [ref=e165]:
+                - button "Choose File" [ref=e166]
+                - generic [ref=e168]:
+                  - generic [ref=e169]: Drag and drop file here
+                  - generic [ref=e170]: Limit 200MB per file • PDF, TXT, XLSX, XLS
+                - button "Browse files" [active] [ref=e171] [cursor=pointer]
+              - list [ref=e272]:
+                - listitem [ref=e273]:
+                  - generic [ref=e274]:
+                    - generic [ref=e279]:
+                      - generic "Refined_Chatbot_Data_v2.xlsx" [ref=e280]
+                      - generic [ref=e281]: 11.3KB
+                    - button [ref=e283] [cursor=pointer]
+            - generic [ref=e174]:
+              - paragraph [ref=e177]: 청크(Chunk) 분할 크기 (글자 수, PDF/TXT에만 적용)
+              - generic [ref=e178]:
+                - slider "청크(Chunk) 분할 크기 (글자 수, PDF/TXT에만 적용)" [ref=e181]:
+                  - generic: "300"
+                - generic [ref=e182]:
+                  - generic [ref=e183]: "100"
+                  - generic [ref=e184]: "800"
+            - button [ref=e188] [cursor=pointer]:
+              - paragraph [ref=e190]: 🚀 문서 학습 및 벡터 DB 색인 실행
+        - generic [ref=e193]:
+          - heading "🔍 지식베이스 청크(Chunk) 관리 및 수동 편집" [level=3] [ref=e198]
+          - paragraph [ref=e203]: 의미가 끊어진 청크를 수동 수정하거나 직관적으로 편집한 뒤 원클릭 재학습(Re-embed)할 수 있습니다.
+          - paragraph [ref=e207]:
+            - strong [ref=e208]: "현재 등록된 지식 청크 수:"
+            - code [ref=e209]: 27개
+          - generic [ref=e214]:
+            - button "Add row" [ref=e217] [cursor=pointer]
+            - button "Show/hide columns" [ref=e224] [cursor=pointer]
+            - button "Download as CSV" [ref=e230] [cursor=pointer]
+            - button "Search" [ref=e236] [cursor=pointer]
+            - button "Fullscreen" [ref=e242] [cursor=pointer]
+          - generic [ref=e254]:
+            - button [ref=e260] [cursor=pointer]:
+              - paragraph [ref=e262]: 🔄 수정된 데이터 원클릭 재학습 (Re-embed)
+            - button [ref=e268] [cursor=pointer]:
+              - paragraph [ref=e270]: 🗑️ 선택 청크 초기화/새로고침

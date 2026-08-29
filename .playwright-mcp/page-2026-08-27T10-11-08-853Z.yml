@@ -1,0 +1,81 @@
+- generic [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - button "Deploy" [ref=f3e9] [cursor=pointer]
+  - generic [ref=f3e4]:
+    - button [ref=f3e14] [cursor=pointer]
+    - generic [ref=f3e24]:
+      - generic [ref=f3e28]:
+        - generic [ref=f3e29]: SYSTEM CONTROL
+        - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f3e30]
+        - paragraph [ref=f3e31]: AI RAG 통제반 v2.0
+      - generic [ref=f3e33]:
+        - paragraph [ref=f3e36] [cursor=pointer]: 통제반 메인 메뉴
+        - radiogroup "통제반 메인 메뉴" [ref=f3e37] [cursor=pointer]:
+          - generic [ref=f3e38]:
+            - radio "📊 RAG 데이터 파이프라인"
+            - paragraph [ref=f3e43]: 📊 RAG 데이터 파이프라인
+          - generic [ref=f3e44]:
+            - radio "🧠 HITL 오답 리뷰"
+            - paragraph [ref=f3e49]: 🧠 HITL 오답 리뷰
+          - generic [ref=f3e50]:
+            - radio "⚙️ AI 페르소나 및 보안 설정"
+            - paragraph [ref=f3e55]: ⚙️ AI 페르소나 및 보안 설정
+          - generic [ref=f3e56]:
+            - radio "🔑 LLM API 관리"
+            - paragraph [ref=f3e61]: 🔑 LLM API 관리
+          - generic [ref=f3e62]:
+            - radio "👥 직원 계정 관리"
+            - paragraph [ref=f3e67]: 👥 직원 계정 관리
+          - generic [ref=f3e68]:
+            - radio "🤖 RAG 챗봇 시뮬레이터" [checked]
+            - paragraph [ref=f3e73]: 🤖 RAG 챗봇 시뮬레이터
+      - separator [ref=f3e77]
+      - alert [ref=f3e80]:
+        - paragraph [ref=f3e85]:
+          - text: 🟢
+          - strong [ref=f3e86]: "DB 상태:"
+          - text: Supabase pgvector Live Connection
+      - paragraph [ref=f3e90]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f3e275]:
+      - generic [ref=f3e278]:
+        - generic [ref=f3e282]:
+          - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f3e284]
+          - paragraph [ref=f3e286]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+        - generic [ref=f3e287]: MODULE 06
+        - heading "🤖 RAG 챗봇 시뮬레이터 (STT & TTS / 담당자 메시지 전달)" [level=1] [ref=f3e295]
+        - paragraph [ref=f3e300]:
+          - text: 챗봇 대화 중 답변이 마음에 들지 않거나
+          - strong [ref=f3e301]: 담당자 직접 전달
+          - text: 을 원하는 경우,
+          - strong [ref=f3e302]: 텍스트/음성 메시지
+          - text: 를 남기면 AI가 분석하여 Supabase에 접수하는 기능을 실시간 시뮬레이션합니다.
+        - separator [ref=f3e306]
+        - generic "Chat message from assistant" [ref=f3e312]:
+          - paragraph [ref=f3e318]:
+            - text: 안녕하세요, 강서나눔돌봄센터 AI 챗봇입니다. 서비스 안내 외에도 대화 중
+            - strong [ref=f3e319]: "[📞 담당자에게 메시지 남기기]"
+            - text: 버튼을 통해 언제든 직접 접수하실 수 있습니다.
+        - separator [ref=f3e323]
+        - group [ref=f3e325]:
+          - paragraph [ref=f3e329] [cursor=pointer]: 📞 담당자에게 직접 메시지 전달하기 (상담사 1:1 메시지 접수)
+          - generic [ref=f3e353]:
+            - paragraph [ref=f3e357]: AI 대화가 만족스럽지 않거나 담당자의 직접 콜백이 필요한 경우 텍스트 또는 음성으로 메시지를 남겨주세요.
+            - generic [ref=f3e359]:
+              - paragraph [ref=f3e362]: 전달 방식 선택
+              - radiogroup "전달 방식 선택" [ref=f3e363] [cursor=pointer]:
+                - generic [ref=f3e364]:
+                  - radio "💬 텍스트 메시지 전달" [checked]
+                  - paragraph [ref=f3e369]: 💬 텍스트 메시지 전달
+                - generic [ref=f3e370]:
+                  - radio "🎙️ 음성 녹음 메시지 전달 (STT 시뮬레이션)"
+                  - paragraph [ref=f3e375]: 🎙️ 음성 녹음 메시지 전달 (STT 시뮬레이션)
+            - generic [ref=f3e378]:
+              - generic [ref=f3e380]:
+                - paragraph [ref=f3e383]: 전달할 문의 내용 및 연락처 작성
+                - textbox "전달할 문의 내용 및 연락처 작성" [ref=f3e386]:
+                  - /placeholder: "예: 주말 가사간병 방문 서비스 신청하고 싶습니다. 010-1234-5678로 연락 주세요."
+              - button [ref=f3e390] [cursor=pointer]:
+                - paragraph [ref=f3e392]: 🚀 담당자에게 메시지 전달 (Supabase DB 저장)
+      - generic [ref=f3e340]:
+        - textbox "질문을 입력하거나 담당자 연결을 요청하세요..." [ref=f3e343]
+        - button [disabled] [ref=f3e344]

@@ -1,0 +1,129 @@
+- generic [ref=f4e1]:
+  - banner [ref=f4e2]:
+    - button "Deploy" [ref=f4e9] [cursor=pointer]
+  - generic [ref=f4e4]:
+    - button [ref=f4e14] [cursor=pointer]
+    - generic [ref=f4e19]:
+      - button [ref=f4e272] [cursor=pointer]
+      - generic [ref=f4e24]:
+        - generic [ref=f4e28]:
+          - generic [ref=f4e29]: SYSTEM CONTROL
+          - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f4e30]
+          - paragraph [ref=f4e31]: AI RAG 통제반 v2.0
+        - generic [ref=f4e33]:
+          - paragraph [ref=f4e36] [cursor=pointer]: 통제반 메인 메뉴
+          - radiogroup "통제반 메인 메뉴" [ref=f4e37] [cursor=pointer]:
+            - generic [ref=f4e38]:
+              - radio "📊 RAG 데이터 파이프라인"
+              - paragraph [ref=f4e43]: 📊 RAG 데이터 파이프라인
+            - generic [ref=f4e44]:
+              - radio "🧠 HITL 오답 리뷰"
+              - paragraph [ref=f4e49]: 🧠 HITL 오답 리뷰
+            - generic [ref=f4e50]:
+              - radio "⚙️ AI 페르소나 및 보안 설정"
+              - paragraph [ref=f4e55]: ⚙️ AI 페르소나 및 보안 설정
+            - generic [ref=f4e56]:
+              - radio "🔑 LLM API 관리" [checked] [active]
+              - paragraph [ref=f4e61]: 🔑 LLM API 관리
+            - generic [ref=f4e62]:
+              - radio "👥 직원 계정 관리"
+              - paragraph [ref=f4e67]: 👥 직원 계정 관리
+            - generic [ref=f4e68]:
+              - radio "🤖 RAG 챗봇 시뮬레이터"
+              - paragraph [ref=f4e73]: 🤖 RAG 챗봇 시뮬레이터
+        - separator [ref=f4e77]
+        - alert [ref=f4e80]:
+          - paragraph [ref=f4e85]:
+            - text: ⚡
+            - strong [ref=f4e86]: "DB 상태:"
+            - text: Mock Session DB Mode (Supabase 키 설정 시 실DB 자동전환)
+        - paragraph [ref=f4e90]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f4e94]:
+      - generic [ref=f4e98]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f4e100]
+        - paragraph [ref=f4e102]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=f4e103]: MODULE 04
+      - heading "🔑 LLM API 관리" [level=1] [ref=f4e276]
+      - paragraph [ref=f4e116]:
+        - text: 각 LLM 벤더별
+        - strong [ref=f4e277]: 모델명 지정
+        - text: ","
+        - strong [ref=f4e278]: API Key 등록
+        - text: 및
+        - strong [ref=f4e279]: 정상 작동 연결 테스트
+        - text: 를 수행하는 관리자 전용 통제반입니다.
+      - separator [ref=f4e120]
+      - generic [ref=f4e121]:
+        - generic [ref=f4e124]:
+          - generic [ref=f4e281]:
+            - heading "✨ Google Gemini" [level=2] [ref=f4e287]:
+              - generic [ref=f4e288]: ✨
+              - generic [ref=f4e289]: Google Gemini
+            - paragraph [ref=f4e294]: 모델명
+            - textbox "모델명" [ref=f4e299]:
+              - /placeholder: ""
+              - text: gemini-3.1-flash-lite
+            - paragraph [ref=f4e306]: 🔒 API Key
+            - generic [ref=f4e310]:
+              - textbox "API Key" [ref=f4e311]:
+                - /placeholder: 저장된 키가 있으면 비워두고 저장...
+              - button "Show password text" [ref=f4e312] [cursor=pointer]:
+                - img "Show password text" [ref=f4e313]
+            - paragraph [ref=f4e321]: ⚠️ 등록된 키가 없습니다.
+            - button [ref=f4e324] [cursor=pointer]:
+              - paragraph [ref=f4e326]: Google Gemini 연결 테스트
+          - generic [ref=f4e328]:
+            - heading "🐉 Alibaba Qwen" [level=2] [ref=f4e334]:
+              - generic [ref=f4e335]: 🐉
+              - generic [ref=f4e336]: Alibaba Qwen
+            - paragraph [ref=f4e341]: 모델명
+            - textbox "모델명" [ref=f4e346]:
+              - /placeholder: ""
+              - text: qwen-max
+            - paragraph [ref=f4e353]: 🔒 API Key
+            - generic [ref=f4e357]:
+              - textbox "API Key" [ref=f4e358]:
+                - /placeholder: 저장된 키가 있으면 비워두고 저장...
+              - button "Show password text" [ref=f4e359] [cursor=pointer]:
+                - img "Show password text" [ref=f4e360]
+            - paragraph [ref=f4e368]: ⚠️ 등록된 키가 없습니다.
+            - button [ref=f4e371] [cursor=pointer]:
+              - paragraph [ref=f4e373]: Alibaba Qwen 연결 테스트
+        - generic [ref=f4e193]:
+          - generic [ref=f4e375]:
+            - heading "🤖 OpenAI ChatGPT" [level=2] [ref=f4e381]:
+              - generic [ref=f4e382]: 🤖
+              - generic [ref=f4e383]: OpenAI ChatGPT
+            - paragraph [ref=f4e388]: 모델명
+            - textbox "모델명" [ref=f4e393]:
+              - /placeholder: ""
+              - text: gpt-4o
+            - paragraph [ref=f4e400]: 🔒 API Key
+            - generic [ref=f4e404]:
+              - textbox "API Key" [ref=f4e405]:
+                - /placeholder: 저장된 키가 있으면 비워두고 저장...
+              - button "Show password text" [ref=f4e406] [cursor=pointer]:
+                - img "Show password text" [ref=f4e407]
+            - paragraph [ref=f4e415]: ⚠️ 등록된 키가 없습니다.
+            - button [ref=f4e418] [cursor=pointer]:
+              - paragraph [ref=f4e420]: OpenAI ChatGPT 연결 테스트
+          - generic [ref=f4e422]:
+            - heading "🧠 Anthropic Claude" [level=2] [ref=f4e428]:
+              - generic [ref=f4e429]: 🧠
+              - generic [ref=f4e430]: Anthropic Claude
+            - paragraph [ref=f4e435]: 모델명
+            - textbox "모델명" [ref=f4e440]:
+              - /placeholder: ""
+              - text: claude-3-5-sonnet-20241022
+            - paragraph [ref=f4e447]: 🔒 API Key
+            - generic [ref=f4e451]:
+              - textbox "API Key" [ref=f4e452]:
+                - /placeholder: 저장된 키가 있으면 비워두고 저장...
+              - button "Show password text" [ref=f4e453] [cursor=pointer]:
+                - img "Show password text" [ref=f4e454]
+            - paragraph [ref=f4e462]: ⚠️ 등록된 키가 없습니다.
+            - button [ref=f4e465] [cursor=pointer]:
+              - paragraph [ref=f4e467]: Anthropic Claude 연결 테스트
+      - separator [ref=f4e471]
+      - group [ref=f4e473]:
+        - paragraph [ref=f4e477] [cursor=pointer]: 📖 LLM API 관리 안내

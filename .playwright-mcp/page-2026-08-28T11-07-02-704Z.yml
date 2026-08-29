@@ -1,0 +1,94 @@
+- generic [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - button "Deploy" [ref=f3e9] [cursor=pointer]
+  - generic [ref=f3e4]:
+    - button [ref=f3e14] [cursor=pointer]
+    - generic [ref=f3e24]:
+      - generic [ref=f3e28]:
+        - generic [ref=f3e29]: SYSTEM CONTROL
+        - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f3e30]
+        - paragraph [ref=f3e31]: AI RAG 통제반 v2.0
+      - generic [ref=f3e33]:
+        - paragraph [ref=f3e36] [cursor=pointer]: 통제반 메인 메뉴
+        - radiogroup "통제반 메인 메뉴" [ref=f3e37] [cursor=pointer]:
+          - generic [ref=f3e38]:
+            - radio "📊 RAG 데이터 파이프라인"
+            - paragraph [ref=f3e43]: 📊 RAG 데이터 파이프라인
+          - generic [ref=f3e44]:
+            - radio "🧠 HITL 오답 리뷰"
+            - paragraph [ref=f3e49]: 🧠 HITL 오답 리뷰
+          - generic [ref=f3e50]:
+            - radio "⚙️ AI 페르소나 및 보안 설정"
+            - paragraph [ref=f3e55]: ⚙️ AI 페르소나 및 보안 설정
+          - generic [ref=f3e56]:
+            - radio "🔑 LLM API 관리"
+            - paragraph [ref=f3e61]: 🔑 LLM API 관리
+          - generic [ref=f3e62]:
+            - radio "👥 직원 계정 관리" [checked]
+            - paragraph [ref=f3e67]: 👥 직원 계정 관리
+          - generic [ref=f3e68]:
+            - radio "🤖 RAG 챗봇 시뮬레이터"
+            - paragraph [ref=f3e73]: 🤖 RAG 챗봇 시뮬레이터
+      - separator [ref=f3e77]
+      - alert [ref=f3e80]:
+        - paragraph [ref=f3e85]:
+          - text: 🟢
+          - strong [ref=f3e86]: "DB 상태:"
+          - text: Supabase pgvector Live Connection
+      - paragraph [ref=f3e90]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f3e94]:
+      - generic [ref=f3e98]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f3e100]
+        - paragraph [ref=f3e102]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=f3e103]: MODULE 05
+      - heading "👥 직원 계정 및 접수 문의 관리" [level=1] [ref=f3e276]
+      - paragraph [ref=f3e116]:
+        - text: Vercel CS 웹앱 접근용
+        - strong [ref=f3e277]: 직원 화이트리스트 계정
+        - text: 관리 및 챗봇에서 이관된
+        - strong [ref=f3e278]: 담당자 전달 메시지/콜백 접수건
+        - text: 을 조회하고 처리합니다.
+      - separator [ref=f3e120]
+      - generic [ref=f3e280]:
+        - tablist [ref=f3e282]:
+          - tab [ref=f3e283] [cursor=pointer]:
+            - paragraph [ref=f3e285]: 📥 미처리 담당자 전달 메시지 관리 (Supabase 접수건)
+          - tab [active] [selected] [ref=f3e286] [cursor=pointer]:
+            - paragraph [ref=f3e288]: 👥 직원 화이트리스트 계정 관리
+        - tabpanel "👥 직원 화이트리스트 계정 관리" [ref=f3e518]:
+          - generic [ref=f3e521]:
+            - generic [ref=f3e524]:
+              - heading "➕ 신규 실무자 화이트리스트 등록" [level=3] [ref=f3e529]
+              - generic [ref=f3e533]:
+                - generic [ref=f3e535]:
+                  - paragraph [ref=f3e538]: 직원 성명
+                  - textbox "직원 성명" [ref=f3e541]:
+                    - /placeholder: "예: 홍길동"
+                - generic [ref=f3e543]:
+                  - paragraph [ref=f3e546]: 직원 이메일 (인증코드 발송용)
+                  - textbox "직원 이메일 (인증코드 발송용)" [ref=f3e549]:
+                    - /placeholder: example@gangseo.go.kr
+                - generic [ref=f3e551]:
+                  - paragraph [ref=f3e554]: 소속 부서/팀
+                  - generic [ref=f3e556]:
+                    - generic [ref=f3e557]:
+                      - generic [ref=f3e558]: 민원상담팀
+                      - combobox "Selected 민원상담팀. 소속 부서/팀" [ref=f3e560]
+                    - img "open" [ref=f3e562]
+                - button [ref=f3e567] [cursor=pointer]:
+                  - paragraph [ref=f3e569]: ✅ 화이트리스트 계정 추가
+            - generic [ref=f3e572]:
+              - heading "📋 현재 등록된 실무 담당자 명부" [level=3] [ref=f3e577]
+              - paragraph [ref=f3e582]:
+                - strong [ref=f3e583]: "총 등록 인원:"
+                - code [ref=f3e584]: 5명
+              - paragraph [ref=f3e588]: 삭제할 계정의 체크박스를 선택한 뒤 아래 버튼을 눌러 한 번에 삭제할 수 있습니다.
+              - generic [ref=f3e593]:
+                - button "Show/hide columns" [ref=f3e597] [cursor=pointer]
+                - button "Download as CSV" [ref=f3e603] [cursor=pointer]
+                - button "Search" [ref=f3e609] [cursor=pointer]
+                - button "Fullscreen" [ref=f3e615] [cursor=pointer]
+              - separator [ref=f3e630]
+              - heading "🚫 접근 권한 즉시 회수" [level=3] [ref=f3e635]
+              - button [disabled] [ref=f3e639]:
+                - paragraph [ref=f3e641]: 🔥 체크한 계정 삭제 및 권한 회수 (0건)

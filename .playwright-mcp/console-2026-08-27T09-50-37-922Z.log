@@ -1,0 +1,25 @@
+[   10442ms] [WARNING] WebSocket onclose @ http://localhost:8578/static/js/index.C1z8KpLA.js:765
+[   10663ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/health:0
+[   10663ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/host-config:0
+[   11169ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/health:0
+[   11169ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/host-config:0
+[   12202ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/health:0
+[   12203ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/host-config:0
+[   13986ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/health:0
+[   13986ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/host-config:0
+[   18695ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/health:0
+[   18696ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/host-config:0
+[   25814ms] [ERROR] Client Error in reaching server endpoint - No response received when attempting to reach DoInitPings @ http://localhost:8578/static/js/index.C1z8KpLA.js:763
+[   25815ms] [ERROR] 
+Is Streamlit still running? If you accidentally stopped Streamlit, just restart it in your terminal:
+
+```bash
+streamlit run yourscript.py
+```
+       @ http://localhost:8578/static/js/index.C1z8KpLA.js:778
+[   25815ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/health:0
+[   25815ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/host-config:0
+[   40663ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/health:0
+[   40664ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/host-config:0
+[   74206ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/health:0
+[   74207ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8578/_stcore/host-config:0

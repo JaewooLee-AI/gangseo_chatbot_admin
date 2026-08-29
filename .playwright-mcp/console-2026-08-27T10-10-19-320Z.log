@@ -1,0 +1,35 @@
+[   79880ms] [WARNING] WebSocket onclose @ http://localhost:8580/static/js/index.C1z8KpLA.js:765
+[   80028ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[   80028ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[   80535ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[   80535ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[   81695ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[   81695ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[   83700ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[   83700ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[   87013ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[   87014ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[   94391ms] [ERROR] Client Error in reaching server endpoint - No response received when attempting to reach DoInitPings @ http://localhost:8580/static/js/index.C1z8KpLA.js:763
+[   94392ms] [ERROR] 
+Is Streamlit still running? If you accidentally stopped Streamlit, just restart it in your terminal:
+
+```bash
+streamlit run yourscript.py
+```
+       @ http://localhost:8580/static/js/index.C1z8KpLA.js:778
+[   94393ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[   94393ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[  108503ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[  108504ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[  145938ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[  145938ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[  198642ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[  198642ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[  258650ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[  258651ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[  318658ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[  318658ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[  380709ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[  380710ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0
+[  440719ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/health:0
+[  440720ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8580/_stcore/host-config:0

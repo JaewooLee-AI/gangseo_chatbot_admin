@@ -1,0 +1,99 @@
+- generic [ref=f1e1]:
+  - banner [ref=f1e2]:
+    - button "Deploy" [ref=f1e9] [cursor=pointer]
+  - generic [ref=f1e4]:
+    - button [ref=f1e14] [cursor=pointer]
+    - generic [ref=f1e24]:
+      - generic [ref=f1e28]:
+        - generic [ref=f1e29]: SYSTEM CONTROL
+        - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f1e30]
+        - paragraph [ref=f1e31]: AI RAG 통제반 v2.0
+      - generic [ref=f1e33]:
+        - paragraph [ref=f1e36] [cursor=pointer]: 통제반 메인 메뉴
+        - radiogroup "통제반 메인 메뉴" [ref=f1e37] [cursor=pointer]:
+          - generic [ref=f1e38]:
+            - radio "📊 RAG 데이터 파이프라인"
+            - paragraph [ref=f1e43]: 📊 RAG 데이터 파이프라인
+          - generic [ref=f1e44]:
+            - radio "🧠 HITL 오답 리뷰"
+            - paragraph [ref=f1e49]: 🧠 HITL 오답 리뷰
+          - generic [ref=f1e50]:
+            - radio "⚙️ AI 페르소나 및 보안 설정"
+            - paragraph [ref=f1e55]: ⚙️ AI 페르소나 및 보안 설정
+          - generic [ref=f1e56]:
+            - radio "🔑 LLM API 관리"
+            - paragraph [ref=f1e61]: 🔑 LLM API 관리
+          - generic [ref=f1e62]:
+            - radio "👥 직원 계정 관리" [checked]
+            - paragraph [ref=f1e67]: 👥 직원 계정 관리
+          - generic [ref=f1e68]:
+            - radio "🤖 RAG 챗봇 시뮬레이터"
+            - paragraph [ref=f1e73]: 🤖 RAG 챗봇 시뮬레이터
+      - separator [ref=f1e77]
+      - alert [ref=f1e80]:
+        - paragraph [ref=f1e85]:
+          - text: 🟢
+          - strong [ref=f1e86]: "DB 상태:"
+          - text: Supabase pgvector Live Connection
+      - paragraph [ref=f1e90]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f1e94]:
+      - generic [ref=f1e98]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f1e100]
+        - paragraph [ref=f1e102]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=f1e103]: MODULE 05
+      - heading "👥 직원 계정 및 접수 문의 관리" [level=1] [ref=f1e276]
+      - paragraph [ref=f1e116]:
+        - text: Vercel CS 웹앱 접근용
+        - strong [ref=f1e277]: 직원 화이트리스트 계정
+        - text: 관리 및 챗봇에서 이관된
+        - strong [ref=f1e278]: 담당자 전달 메시지/콜백 접수건
+        - text: 을 조회하고 처리합니다.
+      - separator [ref=f1e120]
+      - generic [ref=f1e280]:
+        - tablist [ref=f1e282]:
+          - tab [ref=f1e283] [cursor=pointer]:
+            - paragraph [ref=f1e285]: 📥 미처리 담당자 전달 메시지 관리 (Supabase 접수건)
+          - tab [selected] [ref=f1e286] [cursor=pointer]:
+            - paragraph [ref=f1e288]: 👥 직원 화이트리스트 계정 관리
+        - tabpanel "👥 직원 화이트리스트 계정 관리" [ref=f1e528]:
+          - generic [ref=f1e531]:
+            - generic [ref=f1e534]:
+              - heading "➕ 신규 실무자 화이트리스트 등록" [level=3] [ref=f1e539]
+              - generic [ref=f1e543]:
+                - generic [ref=f1e545]:
+                  - paragraph [ref=f1e548]: 직원 성명
+                  - textbox "직원 성명" [ref=f1e551]:
+                    - /placeholder: "예: 홍길동"
+                - generic [ref=f1e553]:
+                  - paragraph [ref=f1e556]: 직원 이메일 (인증코드 발송용)
+                  - textbox "직원 이메일 (인증코드 발송용)" [ref=f1e559]:
+                    - /placeholder: example@gangseo.go.kr
+                - generic [ref=f1e561]:
+                  - paragraph [ref=f1e564]: 소속 부서/팀
+                  - generic [ref=f1e566]:
+                    - generic [ref=f1e567]:
+                      - generic [ref=f1e568]: 민원상담팀
+                      - combobox "Selected 민원상담팀. 소속 부서/팀" [ref=f1e570]
+                    - img "open" [ref=f1e572]
+                - button [ref=f1e577] [cursor=pointer]:
+                  - paragraph [ref=f1e579]: ✅ 화이트리스트 계정 추가
+            - generic [ref=f1e582]:
+              - heading "📋 현재 등록된 실무 담당자 명부" [level=3] [ref=f1e587]
+              - paragraph [ref=f1e592]:
+                - strong [ref=f1e593]: "총 등록 인원:"
+                - code [ref=f1e594]: 5명
+              - generic [ref=f1e599]:
+                - button "Download as CSV" [ref=f1e602] [cursor=pointer]
+                - button "Search" [ref=f1e608] [cursor=pointer]
+                - button "Fullscreen" [ref=f1e614] [cursor=pointer]
+              - separator [ref=f1e629]
+              - heading "🚫 접근 권한 즉시 회수" [level=3] [ref=f1e634]
+              - generic [ref=f1e707]:
+                - paragraph [ref=f1e710]: 권한을 회수할 직원의 이메일을 선택하세요
+                - generic [ref=f1e712]:
+                  - generic [ref=f1e713]:
+                    - generic [ref=f1e714]: bgbang03@gmail.com
+                    - combobox "Selected bgbang03@gmail.com. 권한을 회수할 직원의 이메일을 선택하세요" [ref=f1e716]
+                  - img "open" [ref=f1e718]
+              - button [active] [ref=f1e652] [cursor=pointer]:
+                - paragraph [ref=f1e654]: 🔥 선택 계정 화이트리스트 삭제 및 권한 회수

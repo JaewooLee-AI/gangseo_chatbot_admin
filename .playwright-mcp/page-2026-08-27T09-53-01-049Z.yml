@@ -1,0 +1,125 @@
+- generic [ref=f2e1]:
+  - banner [ref=f2e2]:
+    - button "Deploy" [ref=f2e9] [cursor=pointer]
+  - generic [ref=f2e4]:
+    - button [ref=f2e14] [cursor=pointer]
+    - generic [ref=f2e24]:
+      - generic [ref=f2e28]:
+        - generic [ref=f2e29]: SYSTEM CONTROL
+        - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f2e30]
+        - paragraph [ref=f2e31]: AI RAG 통제반 v2.0
+      - generic [ref=f2e33]:
+        - paragraph [ref=f2e36] [cursor=pointer]: 통제반 메인 메뉴
+        - radiogroup "통제반 메인 메뉴" [ref=f2e37] [cursor=pointer]:
+          - generic [ref=f2e38]:
+            - radio "📊 RAG 데이터 파이프라인"
+            - paragraph [ref=f2e43]: 📊 RAG 데이터 파이프라인
+          - generic [ref=f2e44]:
+            - radio "🧠 HITL 오답 리뷰"
+            - paragraph [ref=f2e49]: 🧠 HITL 오답 리뷰
+          - generic [ref=f2e50]:
+            - radio "⚙️ AI 페르소나 및 보안 설정"
+            - paragraph [ref=f2e55]: ⚙️ AI 페르소나 및 보안 설정
+          - generic [ref=f2e56]:
+            - radio "🔑 LLM API 관리"
+            - paragraph [ref=f2e61]: 🔑 LLM API 관리
+          - generic [ref=f2e62]:
+            - radio "👥 직원 계정 관리" [checked]
+            - paragraph [ref=f2e67]: 👥 직원 계정 관리
+          - generic [ref=f2e68]:
+            - radio "🤖 RAG 챗봇 시뮬레이터"
+            - paragraph [ref=f2e73]: 🤖 RAG 챗봇 시뮬레이터
+      - separator [ref=f2e77]
+      - alert [ref=f2e80]:
+        - paragraph [ref=f2e85]:
+          - text: ⚡
+          - strong [ref=f2e86]: "DB 상태:"
+          - text: Mock Session DB Mode (Supabase 키 설정 시 실DB 자동전환)
+      - paragraph [ref=f2e90]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f2e94]:
+      - generic [ref=f2e98]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f2e100]
+        - paragraph [ref=f2e102]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=f2e103]: MODULE 05
+      - heading "👥 직원 계정 및 접수 문의 관리" [level=1] [ref=f2e276]
+      - paragraph [ref=f2e116]:
+        - text: Vercel CS 웹앱 접근용
+        - strong [ref=f2e277]: 직원 화이트리스트 계정
+        - text: 관리 및 챗봇에서 이관된
+        - strong [ref=f2e278]: 담당자 전달 메시지/콜백 접수건
+        - text: 을 조회하고 처리합니다.
+      - separator [ref=f2e120]
+      - generic [ref=f2e280]:
+        - tablist [ref=f2e282]:
+          - tab [selected] [ref=f2e283] [cursor=pointer]:
+            - paragraph [ref=f2e285]: 📥 미처리 담당자 전달 메시지 관리 (Supabase 접수건)
+          - tab [ref=f2e286] [cursor=pointer]:
+            - paragraph [ref=f2e288]: 👥 직원 화이트리스트 계정 관리
+        - tabpanel "📥 미처리 담당자 전달 메시지 관리 (Supabase 접수건)" [ref=f2e291]:
+          - generic [ref=f2e293]:
+            - heading "📥 챗봇 전달 메시지 및 콜백 접수 현황" [level=3] [ref=f2e298]
+            - paragraph [ref=f2e303]: 챗봇 이용 중 대화가 만족스럽지 않거나 직접 문의를 남긴 사용자의 AI 추출 연락처 및 문의 내용입니다.
+            - generic [ref=f2e304]:
+              - generic [ref=f2e309]:
+                - paragraph [ref=f2e313]: 🔴 미처리 접수 건수
+                - generic [ref=f2e314]: 1건
+              - generic [ref=f2e320]:
+                - paragraph [ref=f2e324]: 🟢 상담 처리 완료
+                - generic [ref=f2e325]: 1건
+              - generic [ref=f2e331]:
+                - paragraph [ref=f2e335]: 📱 전체 접수 누적
+                - generic [ref=f2e336]: 2건
+            - separator [ref=f2e341]
+            - generic [ref=f2e343]:
+              - paragraph [ref=f2e346]: 📂 카테고리로 필터링
+              - generic [ref=f2e348]:
+                - generic [ref=f2e349]:
+                  - generic [ref=f2e350]: 전체
+                  - combobox "Selected 전체. 📂 카테고리로 필터링" [ref=f2e352]
+                - img "open" [ref=f2e354]
+            - heading "📋 미처리 접수 목록 (우선 연락 필요)" [level=3] [ref=f2e360]
+            - group [ref=f2e363]:
+              - paragraph [ref=f2e367] [cursor=pointer]: 🔴 [2026-08-27 15:52:06] [자격상담] [🎙️ 음성 녹음] 이민원 (010-9876-5432) - 장기요양 등급 신청 서류 관련 콜백 요청 (음성 남김)...
+              - generic [ref=f2e373]:
+                - paragraph [ref=f2e377]:
+                  - strong [ref=f2e378]: "👤 신청자/보호자:"
+                  - code [ref=f2e379]: 이민원
+                - paragraph [ref=f2e383]:
+                  - strong [ref=f2e384]: "📞 AI 추출 연락처:"
+                  - code [ref=f2e385]: 010-9876-5432
+                - paragraph [ref=f2e389]:
+                  - strong [ref=f2e390]: "📂 문의 분류:"
+                  - code [ref=f2e391]: 자격상담
+                - paragraph [ref=f2e395]:
+                  - strong [ref=f2e396]: "📝 AI 문의 요약:"
+                  - text: 장기요양 등급 신청 서류 관련 콜백 요청 (음성 남김)
+                - generic [ref=f2e399]:
+                  - paragraph [ref=f2e400]:
+                    - strong [ref=f2e401]: "💬 원문 발화 메시지:"
+                  - blockquote [ref=f2e402]:
+                    - paragraph [ref=f2e403]: (음성 녹음 발화) 등급 신청 서류를 센터로 보내야 하는지 궁금합니다. 010-9876-5432로 설명 전화 부탁해요.
+                - paragraph [ref=f2e407]: "접수 유형: 🎙️ 음성 녹음 | 접수 일시: 2026-08-27 15:52:06"
+                - separator [ref=f2e411]
+                - generic [ref=f2e475]:
+                  - paragraph [ref=f2e478]: "📝 처리 조치 메모 (예: 10:30 전화 통화 완료 및 가사간병 신청서 안내함)"
+                  - 'textbox "📝 처리 조치 메모 (예: 10:30 전화 통화 완료 및 가사간병 신청서 안내함)" [ref=f2e481]':
+                    - /placeholder: ""
+                - generic [ref=f2e483]:
+                  - paragraph [ref=f2e486]: 👤 처리 담당자 선택
+                  - generic [ref=f2e488]:
+                    - generic [ref=f2e489]:
+                      - generic [ref=f2e490]: 김복지
+                      - combobox "Selected 김복지. 👤 처리 담당자 선택" [ref=f2e492]
+                    - img "open" [ref=f2e494]
+                - generic [ref=f2e434]:
+                  - button [ref=f2e498] [cursor=pointer]:
+                    - paragraph [ref=f2e500]: "✅ 상담 및 콜백 처리 완료 (Status: Resolved)"
+                  - button [ref=f2e503] [cursor=pointer]:
+                    - paragraph [ref=f2e505]: 🗑️ 단순 테스트건 삭제
+            - separator [ref=f2e509]
+            - group [ref=f2e511]:
+              - paragraph [ref=f2e515] [cursor=pointer]: 📚 상담 완료 처리된 이력 보기
+              - generic [ref=f2e529]:
+                - button "Download as CSV" [ref=f2e532] [cursor=pointer]
+                - button "Search" [ref=f2e538] [cursor=pointer]
+                - button "Fullscreen" [ref=f2e544] [cursor=pointer]

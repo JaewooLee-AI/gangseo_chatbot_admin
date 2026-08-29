@@ -1,0 +1,135 @@
+- generic [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - button "Deploy" [ref=f3e9] [cursor=pointer]
+  - generic [ref=f3e4]:
+    - button [ref=f3e14] [cursor=pointer]
+    - generic [ref=f3e19]:
+      - button [ref=f3e272] [cursor=pointer]
+      - generic [ref=f3e24]:
+        - generic [ref=f3e28]:
+          - generic [ref=f3e29]: SYSTEM CONTROL
+          - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f3e30]
+          - paragraph [ref=f3e31]: AI RAG 통제반 v2.0
+        - generic [ref=f3e33]:
+          - paragraph [ref=f3e36] [cursor=pointer]: 통제반 메인 메뉴
+          - radiogroup "통제반 메인 메뉴" [ref=f3e37] [cursor=pointer]:
+            - generic [ref=f3e38]:
+              - radio "📊 RAG 데이터 파이프라인"
+              - paragraph [ref=f3e43]: 📊 RAG 데이터 파이프라인
+            - generic [ref=f3e44]:
+              - radio "🧠 HITL 오답 리뷰"
+              - paragraph [ref=f3e49]: 🧠 HITL 오답 리뷰
+            - generic [ref=f3e50]:
+              - radio "⚙️ AI 페르소나 및 보안 설정"
+              - paragraph [ref=f3e55]: ⚙️ AI 페르소나 및 보안 설정
+            - generic [ref=f3e56]:
+              - radio "🔑 LLM API 관리"
+              - paragraph [ref=f3e61]: 🔑 LLM API 관리
+            - generic [ref=f3e62]:
+              - radio "👥 직원 계정 관리" [checked] [active]
+              - paragraph [ref=f3e67]: 👥 직원 계정 관리
+            - generic [ref=f3e68]:
+              - radio "🤖 RAG 챗봇 시뮬레이터"
+              - paragraph [ref=f3e73]: 🤖 RAG 챗봇 시뮬레이터
+        - separator [ref=f3e77]
+        - alert [ref=f3e80]:
+          - paragraph [ref=f3e85]:
+            - text: 🟢
+            - strong [ref=f3e86]: "DB 상태:"
+            - text: Supabase pgvector Live Connection
+        - paragraph [ref=f3e90]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f3e94]:
+      - generic [ref=f3e98]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f3e100]
+        - paragraph [ref=f3e102]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=f3e103]: MODULE 05
+      - heading "👥 직원 계정 및 접수 문의 관리" [level=1] [ref=f3e276]
+      - paragraph [ref=f3e116]:
+        - text: Vercel CS 웹앱 접근용
+        - strong [ref=f3e277]: 직원 화이트리스트 계정
+        - text: 관리 및 챗봇에서 이관된
+        - strong [ref=f3e278]: 담당자 전달 메시지/콜백 접수건
+        - text: 을 조회하고 처리합니다.
+      - separator [ref=f3e120]
+      - generic [ref=f3e280]:
+        - tablist [ref=f3e282]:
+          - tab [selected] [ref=f3e283] [cursor=pointer]:
+            - paragraph [ref=f3e285]: 📥 미처리 담당자 전달 메시지 관리 (Supabase 접수건)
+          - tab [ref=f3e286] [cursor=pointer]:
+            - paragraph [ref=f3e288]: 👥 직원 화이트리스트 계정 관리
+        - tabpanel "📥 미처리 담당자 전달 메시지 관리 (Supabase 접수건)" [ref=f3e291]:
+          - generic [ref=f3e293]:
+            - heading "📥 챗봇 전달 메시지 및 콜백 접수 현황" [level=3] [ref=f3e298]
+            - paragraph [ref=f3e303]: 챗봇 이용 중 대화가 만족스럽지 않거나 직접 문의를 남긴 사용자의 AI 추출 연락처 및 문의 내용입니다.
+            - generic [ref=f3e304]:
+              - generic [ref=f3e309]:
+                - paragraph [ref=f3e313]: 🔴 미처리 접수 건수
+                - generic [ref=f3e314]: 7건
+              - generic [ref=f3e320]:
+                - paragraph [ref=f3e324]: 🟢 상담 처리 완료
+                - generic [ref=f3e325]: 0건
+              - generic [ref=f3e331]:
+                - paragraph [ref=f3e335]: 📱 전체 접수 누적
+                - generic [ref=f3e336]: 7건
+            - separator [ref=f3e341]
+            - generic [ref=f3e343]:
+              - paragraph [ref=f3e346]: 📂 카테고리로 필터링
+              - generic [ref=f3e348]:
+                - generic [ref=f3e349]:
+                  - generic [ref=f3e350]: 전체
+                  - combobox "Selected 전체. 📂 카테고리로 필터링" [ref=f3e352]
+                - img "open" [ref=f3e354]
+            - heading "📋 미처리 접수 목록 (우선 연락 필요)" [level=3] [ref=f3e360]
+            - group [ref=f3e363]:
+              - paragraph [ref=f3e367] [cursor=pointer]: 🔴 [2026-08-27 13:35:07] [불만접수] [💬 텍스트] 미상 어르신/신청자 (010-1234-5678) - 청소 상태가 불만이에요 로 연락주세요...
+              - generic [ref=f3e373]:
+                - paragraph [ref=f3e377]:
+                  - strong [ref=f3e378]: "👤 신청자/보호자:"
+                  - code [ref=f3e379]: 미상 어르신/신청자
+                - paragraph [ref=f3e383]:
+                  - strong [ref=f3e384]: "📞 AI 추출 연락처:"
+                  - code [ref=f3e385]: 010-1234-5678
+                - paragraph [ref=f3e389]:
+                  - strong [ref=f3e390]: "📂 문의 분류:"
+                  - code [ref=f3e391]: 불만접수
+                - paragraph [ref=f3e395]:
+                  - strong [ref=f3e396]: "📝 AI 문의 요약:"
+                  - text: 청소 상태가 불만이에요 로 연락주세요
+                - generic [ref=f3e399]:
+                  - paragraph [ref=f3e400]:
+                    - strong [ref=f3e401]: "💬 원문 발화 메시지:"
+                  - blockquote [ref=f3e402]:
+                    - paragraph [ref=f3e403]: 청소 상태가 불만이에요 010-1234-5678로 연락주세요
+                - paragraph [ref=f3e407]: "접수 유형: 💬 텍스트 | 접수 일시: 2026-08-27 13:35:07"
+                - separator [ref=f3e411]
+                - generic [ref=f3e413]:
+                  - paragraph [ref=f3e416]: "📝 처리 조치 메모 (예: 10:30 전화 통화 완료 및 가사간병 신청서 안내함)"
+                  - 'textbox "📝 처리 조치 메모 (예: 10:30 전화 통화 완료 및 가사간병 신청서 안내함)" [ref=f3e419]':
+                    - /placeholder: ""
+                - generic [ref=f3e421]:
+                  - paragraph [ref=f3e424]: 👤 처리 담당자 선택
+                  - generic [ref=f3e426]:
+                    - generic [ref=f3e427]:
+                      - generic [ref=f3e428]: 김용훈
+                      - combobox "Selected 김용훈. 👤 처리 담당자 선택" [ref=f3e430]
+                    - img "open" [ref=f3e432]
+                - generic [ref=f3e434]:
+                  - button [ref=f3e440] [cursor=pointer]:
+                    - paragraph [ref=f3e442]: "✅ 상담 및 콜백 처리 완료 (Status: Resolved)"
+                  - button [ref=f3e448] [cursor=pointer]:
+                    - paragraph [ref=f3e450]: 🗑️ 단순 테스트건 삭제
+            - group [ref=f3e452]:
+              - paragraph [ref=f3e456] [cursor=pointer]: 🔴 [2026-08-27 13:35:08] [일반문의] [💬 텍스트] 홍길동 (010-1234-5678) - 관리사님이 너무 불친절해서 교체를 요청합니다...
+            - group [ref=f3e461]:
+              - paragraph [ref=f3e465] [cursor=pointer]: 🔴 [2026-08-28 08:33:27] [일반문의] [💬 텍스트] 김영희 (010-1234-5678) - 어제 오셨던 가사관리사님이 안방 화장실 청소를 아예 안...
+            - group [ref=f3e470]:
+              - paragraph [ref=f3e474] [cursor=pointer]: 🔴 [2026-08-28 08:34:10] [일반문의] [💬 텍스트] 박민준 (010-9876-5432) - 오늘 오전 9시에 방문하시기로 한 분이 9시 40분이 ...
+            - group [ref=f3e479]:
+              - paragraph [ref=f3e483] [cursor=pointer]: 🔴 [2026-08-28 08:34:43] [일반문의] [💬 텍스트] 이수진 (010-4567-8901) - 지금 오시는 분이 저희 어머니한테 자꾸 퉁명스럽게 말씀...
+            - group [ref=f3e488]:
+              - paragraph [ref=f3e492] [cursor=pointer]: 🔴 [2026-08-28 08:35:18] [서비스신청] [💬 텍스트] 최정훈 (010-2345-6789) - 이번 주 금요일에 예약된 가사서비스를 다음 주 월요일 ...
+            - group [ref=f3e497]:
+              - paragraph [ref=f3e501] [cursor=pointer]: 🔴 [2026-08-28 08:35:49] [요금문의] [💬 텍스트] 정수아 (010-3456-7890) - 저번 달에 4시간 정기 서비스 선결제를 다 했는데, 제...
+            - separator [ref=f3e508]
+            - group [ref=f3e510]:
+              - paragraph [ref=f3e514] [cursor=pointer]: 📚 상담 완료 처리된 이력 보기

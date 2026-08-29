@@ -1,0 +1,84 @@
+- generic [ref=f13e1]:
+  - banner [ref=f13e2]:
+    - button "Deploy" [ref=f13e5] [cursor=pointer]
+  - generic [ref=f13e8]:
+    - button [ref=f13e11] [cursor=pointer]
+    - generic [ref=f13e21]:
+      - generic [ref=f13e25]:
+        - generic [ref=f13e26]: SYSTEM CONTROL
+        - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f13e27]
+        - paragraph [ref=f13e28]: AI RAG 통제반 v2.0
+      - generic [ref=f13e30]:
+        - paragraph [ref=f13e33] [cursor=pointer]: 통제반 메인 메뉴
+        - radiogroup "통제반 메인 메뉴" [ref=f13e34] [cursor=pointer]:
+          - generic [ref=f13e35]:
+            - radio "📊 RAG 데이터 파이프라인" [checked]
+            - paragraph [ref=f13e40]: 📊 RAG 데이터 파이프라인
+          - generic [ref=f13e41]:
+            - radio "🧠 HITL 오답 리뷰"
+            - paragraph [ref=f13e46]: 🧠 HITL 오답 리뷰
+          - generic [ref=f13e47]:
+            - radio "⚙️ AI 페르소나 및 보안 설정"
+            - paragraph [ref=f13e52]: ⚙️ AI 페르소나 및 보안 설정
+          - generic [ref=f13e53]:
+            - radio "🔑 LLM API 관리"
+            - paragraph [ref=f13e58]: 🔑 LLM API 관리
+          - generic [ref=f13e59]:
+            - radio "👥 직원 계정 관리"
+            - paragraph [ref=f13e64]: 👥 직원 계정 관리
+          - generic [ref=f13e65]:
+            - radio "🤖 RAG 챗봇 시뮬레이터"
+            - paragraph [ref=f13e70]: 🤖 RAG 챗봇 시뮬레이터
+      - separator [ref=f13e74]
+      - alert [ref=f13e77]:
+        - paragraph [ref=f13e82]:
+          - text: 🟢
+          - strong [ref=f13e83]: "DB 상태:"
+          - text: Supabase pgvector Live Connection
+      - paragraph [ref=f13e87]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f13e93]:
+      - generic [ref=f13e97]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f13e99]
+        - paragraph [ref=f13e101]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=f13e102]: MODULE 01
+      - heading "📊 RAG 데이터 파이프라인 및 시각화" [level=1] [ref=f13e110]
+      - paragraph [ref=f13e115]: 신규 문서를 업로드하여 벡터 DB에 색인하고, 자동 분할된 데이터 청크(Chunk)를 엑셀처럼 수동 결합 및 재학습(Re-embed)할 수 있습니다.
+      - separator [ref=f13e119]
+      - generic [ref=f13e120]:
+        - generic [ref=f13e123]:
+          - heading "📌 신규 지식 문서 업로드" [level=3] [ref=f13e128]
+          - paragraph [ref=f13e133]:
+            - text: 지식 오염 방지를 위해 문서 업로드 시
+            - strong [ref=f13e134]: 카테고리 메타데이터
+            - text: 를 반드시 지정해야 합니다.
+          - generic [ref=f13e137]:
+            - generic [ref=f13e139]:
+              - paragraph [ref=f13e142]: 📌 메타데이터 카테고리 선택 (필수)
+              - generic [ref=f13e144]:
+                - generic [ref=f13e145]:
+                  - generic [ref=f13e146]: 선택 안 함
+                  - combobox "Selected 선택 안 함. 📌 메타데이터 카테고리 선택 (필수)" [ref=f13e148]
+                - img "open" [ref=f13e150]
+            - generic [ref=f13e154]:
+              - paragraph [ref=f13e157]: 문서 업로드 (PDF, TXT, Excel/XLSX)
+              - region "문서 업로드 (PDF, TXT, Excel/XLSX)" [ref=f13e164]:
+                - button "Choose File" [ref=f13e165]
+                - generic [ref=f13e167]:
+                  - generic [ref=f13e168]: Drag and drop file here
+                  - generic [ref=f13e169]: Limit 200MB per file • PDF, TXT, XLSX, XLS
+                - button "Browse files" [ref=f13e170] [cursor=pointer]
+            - generic [ref=f13e173]:
+              - paragraph [ref=f13e176]: 청크(Chunk) 분할 크기 (글자 수)
+              - generic [ref=f13e177]:
+                - slider "청크(Chunk) 분할 크기 (글자 수)" [ref=f13e180]:
+                  - generic: "300"
+                - generic [ref=f13e181]:
+                  - generic [ref=f13e182]: "100"
+                  - generic [ref=f13e183]: "800"
+            - button [ref=f13e187] [cursor=pointer]:
+              - paragraph [ref=f13e189]: 🚀 문서 학습 및 벡터 DB 색인 실행
+        - generic [ref=f13e192]:
+          - heading "🔍 지식베이스 청크(Chunk) 관리 및 수동 편집" [level=3] [ref=f13e197]
+          - paragraph [ref=f13e202]: 의미가 끊어진 청크를 수동 수정하거나 직관적으로 편집한 뒤 원클릭 재학습(Re-embed)할 수 있습니다.
+          - alert [ref=f13e205]:
+            - paragraph [ref=f13e210]: 💡 현재 등록된 지식베이스 청크 데이터가 없습니다. 좌측에서 문서를 업로드해 주세요.

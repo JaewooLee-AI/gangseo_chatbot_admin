@@ -1,0 +1,68 @@
+- generic [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - button "Deploy" [ref=f3e9] [cursor=pointer]
+  - generic [ref=f3e4]:
+    - button [ref=f3e14] [cursor=pointer]
+    - generic [ref=f3e19]:
+      - button [ref=f3e213] [cursor=pointer]
+      - generic [ref=f3e24]:
+        - generic [ref=f3e28]:
+          - generic [ref=f3e29]: SYSTEM CONTROL
+          - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f3e30]
+          - paragraph [ref=f3e31]: AI RAG 통제반 v2.0
+        - generic [ref=f3e33]:
+          - paragraph [ref=f3e36] [cursor=pointer]: 통제반 메인 메뉴
+          - radiogroup "통제반 메인 메뉴" [ref=f3e37] [cursor=pointer]:
+            - generic [ref=f3e38]:
+              - radio "📊 RAG 데이터 파이프라인"
+              - paragraph [ref=f3e43]: 📊 RAG 데이터 파이프라인
+            - generic [ref=f3e44]:
+              - radio "🧠 HITL 오답 리뷰" [checked] [active]
+              - paragraph [ref=f3e49]: 🧠 HITL 오답 리뷰
+            - generic [ref=f3e50]:
+              - radio "⚙️ AI 페르소나 및 보안 설정"
+              - paragraph [ref=f3e55]: ⚙️ AI 페르소나 및 보안 설정
+            - generic [ref=f3e56]:
+              - radio "🔑 LLM API 관리"
+              - paragraph [ref=f3e61]: 🔑 LLM API 관리
+            - generic [ref=f3e62]:
+              - radio "👥 직원 계정 관리"
+              - paragraph [ref=f3e67]: 👥 직원 계정 관리
+            - generic [ref=f3e68]:
+              - radio "🤖 RAG 챗봇 시뮬레이터"
+              - paragraph [ref=f3e73]: 🤖 RAG 챗봇 시뮬레이터
+        - separator [ref=f3e77]
+        - alert [ref=f3e80]:
+          - paragraph [ref=f3e85]:
+            - text: 🟢
+            - strong [ref=f3e86]: "DB 상태:"
+            - text: Supabase pgvector Live Connection
+        - paragraph [ref=f3e90]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f3e94]:
+      - generic [ref=f3e98]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f3e100]
+        - paragraph [ref=f3e102]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=f3e103]: MODULE 02
+      - heading "🧠 오답 리뷰 및 AI 신규 학습 (HITL)" [level=1] [ref=f3e217]
+      - paragraph [ref=f3e116]:
+        - text: 챗봇이 답변 임계치 미달로
+        - strong [ref=f3e218]: 상담사 연결(Fallback)
+        - text: 코드를 반환한 사용자 미해결 질문 모니터링 및 자가진화 파이프라인입니다.
+      - separator [ref=f3e120]
+      - generic [ref=f3e121]:
+        - generic [ref=f3e219]:
+          - paragraph [ref=f3e223]: 🔴 처리 대기 중 오답 건수
+          - generic [ref=f3e224]: 0건
+        - generic [ref=f3e226]:
+          - paragraph [ref=f3e230]: 🟢 개선 완료 모범 정답
+          - generic [ref=f3e231]: 0건
+        - generic [ref=f3e237]:
+          - paragraph [ref=f3e241]: 📈 HITL 지식 커버리지율
+          - generic [ref=f3e242]: 100.0%
+      - separator [ref=f3e247]
+      - heading "📋 검토 필요한 미해결 질문 목록" [level=3] [ref=f3e252]
+      - alert [ref=f3e256]:
+        - paragraph [ref=f3e261]: 🎉 현재 모든 오답 로그가 리뷰 완료되었습니다. AI가 최상의 컨디션을 유지 중입니다.
+      - separator [ref=f3e265]
+      - group [ref=f3e267]:
+        - paragraph [ref=f3e271] [cursor=pointer]: 📚 최근 반영 완료된 HITL 모범 정답 기록 보기

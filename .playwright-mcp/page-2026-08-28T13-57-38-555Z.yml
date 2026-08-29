@@ -1,0 +1,96 @@
+- generic [ref=f9e1]:
+  - banner [ref=f9e2]:
+    - button "Deploy" [ref=f9e5] [cursor=pointer]
+  - generic [ref=f9e8]:
+    - button [ref=f9e11] [cursor=pointer]
+    - generic [ref=f9e21]:
+      - generic [ref=f9e25]:
+        - generic [ref=f9e26]: SYSTEM CONTROL
+        - heading "🏛️ 강서나눔돌봄센터" [level=2] [ref=f9e27]
+        - paragraph [ref=f9e28]: AI RAG 통제반 v2.0
+      - generic [ref=f9e30]:
+        - paragraph [ref=f9e33] [cursor=pointer]: 통제반 메인 메뉴
+        - radiogroup "통제반 메인 메뉴" [ref=f9e34] [cursor=pointer]:
+          - generic [ref=f9e35]:
+            - radio "📊 RAG 데이터 파이프라인" [checked]
+            - paragraph [ref=f9e40]: 📊 RAG 데이터 파이프라인
+          - generic [ref=f9e41]:
+            - radio "🧠 HITL 오답 리뷰"
+            - paragraph [ref=f9e46]: 🧠 HITL 오답 리뷰
+          - generic [ref=f9e47]:
+            - radio "⚙️ AI 페르소나 및 보안 설정"
+            - paragraph [ref=f9e52]: ⚙️ AI 페르소나 및 보안 설정
+          - generic [ref=f9e53]:
+            - radio "🔑 LLM API 관리"
+            - paragraph [ref=f9e58]: 🔑 LLM API 관리
+          - generic [ref=f9e59]:
+            - radio "👥 직원 계정 관리"
+            - paragraph [ref=f9e64]: 👥 직원 계정 관리
+          - generic [ref=f9e65]:
+            - radio "🤖 RAG 챗봇 시뮬레이터"
+            - paragraph [ref=f9e70]: 🤖 RAG 챗봇 시뮬레이터
+      - separator [ref=f9e74]
+      - alert [ref=f9e77]:
+        - paragraph [ref=f9e82]:
+          - text: 🟢
+          - strong [ref=f9e83]: "DB 상태:"
+          - text: Supabase pgvector Live Connection
+      - paragraph [ref=f9e87]: © 2026 강서나눔돌봄센터. All rights reserved.
+    - generic [ref=f9e93]:
+      - generic [ref=f9e97]:
+        - heading "🤖 강서나눔돌봄센터 AI 챗봇 최고 관리자 통합 통제반" [level=2] [ref=f9e99]
+        - paragraph [ref=f9e101]: 3-Tier 아키텍처 기반의 RAG 지식 통제, 컴플라이언스 가드레일 제어 및 Human-in-the-loop(HITL) 자가진화 대시보드입니다.
+      - generic [ref=f9e102]: MODULE 01
+      - heading "📊 RAG 데이터 파이프라인 및 시각화" [level=1] [ref=f9e110]
+      - paragraph [ref=f9e115]: 신규 문서를 업로드하여 벡터 DB에 색인하고, 자동 분할된 데이터 청크(Chunk)를 엑셀처럼 수동 결합 및 재학습(Re-embed)할 수 있습니다.
+      - separator [ref=f9e119]
+      - generic [ref=f9e120]:
+        - generic [ref=f9e123]:
+          - heading "📌 신규 지식 문서 업로드" [level=3] [ref=f9e128]
+          - paragraph [ref=f9e133]:
+            - text: 지식 오염 방지를 위해 문서 업로드 시
+            - strong [ref=f9e134]: 카테고리 메타데이터
+            - text: 를 반드시 지정해야 합니다.
+          - generic [ref=f9e137]:
+            - generic [ref=f9e139]:
+              - paragraph [ref=f9e142]: 📌 메타데이터 카테고리 선택 (필수)
+              - generic [ref=f9e144]:
+                - generic [ref=f9e145]:
+                  - generic [ref=f9e146]: 선택 안 함
+                  - combobox "Selected 선택 안 함. 📌 메타데이터 카테고리 선택 (필수)" [ref=f9e148]
+                - img "open" [ref=f9e150]
+            - generic [ref=f9e154]:
+              - paragraph [ref=f9e157]: 문서 업로드 (PDF, TXT, Excel/XLSX)
+              - region "문서 업로드 (PDF, TXT, Excel/XLSX)" [ref=f9e164]:
+                - button "Choose File" [ref=f9e165]
+                - generic [ref=f9e167]:
+                  - generic [ref=f9e168]: Drag and drop file here
+                  - generic [ref=f9e169]: Limit 200MB per file • PDF, TXT, XLSX, XLS
+                - button "Browse files" [ref=f9e170] [cursor=pointer]
+            - generic [ref=f9e173]:
+              - paragraph [ref=f9e176]: 청크(Chunk) 분할 크기 (글자 수)
+              - generic [ref=f9e177]:
+                - slider "청크(Chunk) 분할 크기 (글자 수)" [ref=f9e180]:
+                  - generic: "300"
+                - generic [ref=f9e181]:
+                  - generic [ref=f9e182]: "100"
+                  - generic [ref=f9e183]: "800"
+            - button [ref=f9e187] [cursor=pointer]:
+              - paragraph [ref=f9e189]: 🚀 문서 학습 및 벡터 DB 색인 실행
+        - generic [ref=f9e192]:
+          - heading "🔍 지식베이스 청크(Chunk) 관리 및 수동 편집" [level=3] [ref=f9e197]
+          - paragraph [ref=f9e202]: 의미가 끊어진 청크를 수동 수정하거나 직관적으로 편집한 뒤 원클릭 재학습(Re-embed)할 수 있습니다.
+          - paragraph [ref=f9e206]:
+            - strong [ref=f9e207]: "현재 등록된 지식 청크 수:"
+            - code [ref=f9e208]: 27개
+          - generic [ref=f9e213]:
+            - button "Add row" [ref=f9e216] [cursor=pointer]
+            - button "Show/hide columns" [ref=f9e223] [cursor=pointer]
+            - button "Download as CSV" [ref=f9e229] [cursor=pointer]
+            - button "Search" [ref=f9e235] [cursor=pointer]
+            - button "Fullscreen" [ref=f9e241] [cursor=pointer]
+          - generic [ref=f9e253]:
+            - button [ref=f9e259] [cursor=pointer]:
+              - paragraph [ref=f9e261]: 🔄 수정된 데이터 원클릭 재학습 (Re-embed)
+            - button [ref=f9e267] [cursor=pointer]:
+              - paragraph [ref=f9e269]: 🗑️ 선택 청크 초기화/새로고침
