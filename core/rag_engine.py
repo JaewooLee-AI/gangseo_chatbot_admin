@@ -368,6 +368,73 @@ def normalize_query(user_query: str, history: List[Dict[str, str]] = None,
     return user_query
 
 
+GUARDRAIL_TOPIC_DESCRIPTIONS = {
+    "medical": "의료/질병 진단이나 치료·투약에 대한 의학적 조언",
+    "legal": "법률적 판단이나 소송·노무 분쟁에 대한 법률 상담",
+    "privacy": "주민등록번호·계좌번호 등 민감한 개인정보의 수집이나 취급",
+}
+
+
+def check_guardrail_intent(user_query: str, topic: str,
+                            model_name: str = "gemini-3.1-flash-lite") -> bool:
+    """
+    가드레일 키워드가 탐지된 질문에 대해, 실제로 차단 대상 '의도'인지를 LLM이 판정한다.
+
+    단순 키워드 포함 검사만으로는 "치매 어르신도 서비스 이용할 수 있나요?"(정상적인
+    서비스 자격 문의)와 "치매 약은 뭘 먹어야 하나요?"(의학적 조언 요청)를 구분할 수
+    없어, 돌봄센터의 핵심 고객 문의가 대량으로 오차단된다. 실측 결과 정상 질문 6건 중
+    5건이 차단되었다.
+
+    반환값: True면 차단, False면 통과.
+    판정 실패(키 없음/API 오류) 시에는 컴플라이언스 기능의 성격상 보수적으로 True(차단)를
+    반환해, 기존 키워드 기반 동작과 동일한 수준의 방어를 유지한다.
+    """
+    api_key = _get_vault_key("gemini", "GEMINI_API_KEY")
+    if not api_key:
+        return True
+
+    topic_desc = GUARDRAIL_TOPIC_DESCRIPTIONS.get(topic, topic)
+
+    prompt = f"""당신은 강서나눔돌봄센터(장애인활동지원·가사서비스 제공 기관) AI 상담 챗봇의
+컴플라이언스 판정기입니다. 아래 사용자 질문이 "{topic_desc}"을(를) 실제로 요구하는지 판정하세요.
+
+판정 기준:
+- 사용자가 전문가의 판단(진단/처방/법적 판단 등)을 챗봇에게 요구하면 BLOCK 입니다.
+- 서비스 이용 자격, 신청 절차, 필요 서류, 요금, 채용/근무 조건에 대한 문의는
+  질문에 질병명·법률 용어가 등장하더라도 정상 문의이므로 ALLOW 입니다.
+  (예: "치매 어르신도 서비스 받을 수 있나요?" -> 서비스 자격 문의이므로 ALLOW)
+  (예: "치매에 좋은 약 알려주세요" -> 의학적 조언 요구이므로 BLOCK)
+  (예: "근로계약서는 언제 작성하나요?" -> 채용 절차 문의이므로 ALLOW)
+  (예: "부당해고로 소송하려면 어떻게 하나요?" -> 법률 상담 요구이므로 BLOCK)
+
+다른 설명 없이 BLOCK 또는 ALLOW 중 한 단어만 출력하세요.
+
+[사용자 질문]
+{user_query}"""
+
+    try:
+        resp = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            candidates = resp.json().get("candidates") or []
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                if parts and parts[0].get("text"):
+                    verdict = parts[0]["text"].strip().upper()
+                    if "ALLOW" in verdict:
+                        return False
+                    if "BLOCK" in verdict:
+                        return True
+    except requests.exceptions.RequestException:
+        pass
+
+    return True
+
+
 def extract_hitl_answer(content: str) -> str:
     """
     HITL 모범 정답 청크("질문: ...\\n답변: ...")에서 답변 부분만 추출한다.
@@ -377,7 +444,25 @@ def extract_hitl_answer(content: str) -> str:
     return match.group(1).strip() if match else content
 
 
-def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30):
+# 진입 시점에 사용자가 선택하는 페르소나 -> 검색 대상 카테고리(엑셀 시트명) 매핑.
+# 지식베이스가 이미 "서비스 종류 x 이용자/종사자" 축으로 구성되어 있어 그대로 대응된다.
+PERSONA_CATEGORIES = {
+    "활동지원_이용": ["2_장애인활동지원_이용자", "3_장애인활동지원_본인부담금"],
+    "활동지원_취업": ["1_장애인활동지원_종사자"],
+    "가사_이용": ["5_가사서비스_고객및요금"],
+    "가사_취업": ["4_가사서비스_종사자"],
+}
+
+PERSONA_LABELS = {
+    "활동지원_이용": "장애인활동지원 서비스를 이용하고 싶어요",
+    "활동지원_취업": "활동지원사로 일하고 싶어요",
+    "가사_이용": "가사서비스를 이용하고 싶어요",
+    "가사_취업": "가사관리사로 일하고 싶어요",
+}
+
+
+def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30,
+                   categories: List[str] = None):
     """
     검색을 서버사이드 RPC(admin_match_documents, supabase/005 참고)에 위임한다.
     pgvector ivfflat 인덱스를 활용한 벡터 후보군과, pg_trgm 트라이그램 유사도로 찾은
@@ -389,6 +474,10 @@ def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30
 
     RPC가 아직 배포되지 않았거나(마이그레이션 미적용) 호출이 실패하면, 기존 방식인
     "전량 조회 후 클라이언트 사이드 코사인 계산"으로 안전하게 대체(fallback)한다.
+
+    categories를 주면 해당 카테고리(페르소나) 안에서만 검색한다. 사용자가 진입 시점에
+    자신의 상황을 선택했을 때 타 페르소나 문서가 컨텍스트를 잠식하는 것을 막기 위함이다.
+    None/빈 리스트면 기존과 동일하게 전체를 검색한다.
 
     반환값: (vector_matches, keyword_matches). 둘 다 (similarity, content, category)
     튜플 리스트. vector_matches는 코사인 유사도 내림차순이며 기존 임계치 게이트 로직에
@@ -402,6 +491,7 @@ def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30
             "query_embedding": query_vec,
             "query_text": query_text,
             "match_count": match_count,
+            "filter_categories": categories or None,
         }).execute()
         rows = res.data if res.data is not None else []
         vector_matches = [
@@ -417,7 +507,10 @@ def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30
     except Exception:
         pass
 
-    docs_res = supabase.table("rag_documents").select("content, category, embedding").execute()
+    query = supabase.table("rag_documents").select("content, category, embedding")
+    if categories:
+        query = query.in_("category", categories)
+    docs_res = query.execute()
     docs = docs_res.data if docs_res.data else []
     matches = []
     for doc in docs:

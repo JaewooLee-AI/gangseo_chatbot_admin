@@ -159,6 +159,12 @@ class MockQueryBuilder:
         self.filters.append((column, value))
         return self
 
+    def in_(self, column, values):
+        # supabase-py의 .in_()과 동일하게 "값이 목록 안에 있으면 통과"로 동작한다.
+        # eq와 같은 필터 목록에 담되, 비교 방식을 구분할 수 있도록 연산자를 함께 넣는다.
+        self.filters.append((column, list(values), "in"))
+        return self
+
     def limit(self, count):
         self.limit_count = count
         return self
@@ -186,8 +192,14 @@ class MockQueryBuilder:
 
     def _apply_filters(self, rows):
         result = rows
-        for column, value in self.filters:
-            result = [item for item in result if item.get(column) == value]
+        for f in self.filters:
+            # eq는 (column, value), in_는 (column, values, "in") 형태로 담긴다.
+            if len(f) == 3 and f[2] == "in":
+                column, values, _ = f
+                result = [item for item in result if item.get(column) in values]
+            else:
+                column, value = f[0], f[1]
+                result = [item for item in result if item.get(column) == value]
         return result
 
     def _do_insert(self, record):

@@ -5,7 +5,8 @@ import datetime
 from core.db import supabase
 from core.rag_engine import (
     generate_embedding, generate_chat_answer, ANSWER_GAP_MARKER,
-    normalize_query, extract_hitl_answer, hybrid_search,
+    normalize_query, extract_hitl_answer, hybrid_search, check_guardrail_intent,
+    PERSONA_CATEGORIES, PERSONA_LABELS,
 )
 
 def extract_contact_and_summary(message: str):
@@ -95,6 +96,13 @@ STRICTNESS_THRESHOLD = {1: 0.50, 2: 0.55, 3: 0.60, 4: 0.65, 5: 0.70}
 # 오탐(다른 질문에 엉뚱한 검증 답변을 그대로 노출)을 막기 위한 보수적인 값이다.
 HITL_CACHE_THRESHOLD = 0.85
 
+# 컨텍스트 포함 임계치. "답변을 할지 말지"를 정하는 게이트(STRICTNESS_THRESHOLD)와
+# "어떤 문서를 LLM에게 근거로 줄지"를 정하는 기준은 목적이 다르다. 둘 다 게이트 값으로
+# 처리하면, 게이트를 겨우 통과한 질문에서 정작 필요한 문서가 컨텍스트에서 빠진다.
+# (실측: '활동지원사로 일하고 싶어요' 질의에서 정답인 '입사 필요 서류'(0.644)가
+#  0.70 컷에 걸려 제외되고, 주소/문의처 문서만 LLM에 전달되어 오답이 나갔다.)
+CONTEXT_THRESHOLD = 0.55
+
 # fallback_logs.failure_type 값: 오답 리뷰(Module 02)에서 실패 원인별 분포를 보고
 # 어떤 개선(질의 정규화 튜닝/지식 보강/가드레일 조정 등)이 가장 시급한지 데이터 기반으로
 # 판단할 수 있도록, 로그 적재 시점에 원인을 함께 태깅한다.
@@ -105,15 +113,28 @@ FAILURE_TYPE_HUMAN_REQUESTED = "human_requested"  # 담당자 연결을 원했�
 
 def check_guardrail_block(prompt: str, settings: dict):
     """
-    bot_settings의 컴플라이언스 토글에 따라 해당 주제 질의를 강제 차단한다.
+    bot_settings의 컴플라이언스 토글에 따라 해당 주제 질의를 차단한다.
     차단 대상이면 (True, 사유텍스트)를, 아니면 (False, None)을 반환한다.
+
+    2단계 판정:
+      1) 키워드 사전으로 후보를 싸게 걸러낸다(대부분의 질문은 여기서 통과 → LLM 호출 없음).
+      2) 키워드가 걸린 질문만 LLM이 실제 '의도'를 판정한다.
+    키워드 포함 여부만으로 차단하면 "치매 어르신도 서비스 이용 가능한가요?" 같은 정상적인
+    서비스 자격 문의까지 막혀(실측: 정상 질문 6건 중 5건 오차단) 핵심 고객 문의가 유실된다.
     """
-    if settings.get("block_medical", True) and any(k in prompt for k in MEDICAL_KEYWORDS):
-        return True, "🏥 의료/질병 진단 관련 문의는 컴플라이언스 가드레일에 의해 차단되었습니다."
-    if settings.get("block_legal", True) and any(k in prompt for k in LEGAL_KEYWORDS):
-        return True, "⚖️ 법률/노무 상담 관련 문의는 컴플라이언스 가드레일에 의해 차단되었습니다."
-    if settings.get("block_privacy", True) and any(k in prompt for k in PRIVACY_KEYWORDS):
-        return True, "🔒 개인정보 수집이 필요한 문의는 컴플라이언스 가드레일에 의해 차단되었습니다."
+    checks = (
+        ("block_medical", MEDICAL_KEYWORDS, "medical",
+         "🏥 의료/질병 진단 관련 문의는 컴플라이언스 가드레일에 의해 차단되었습니다."),
+        ("block_legal", LEGAL_KEYWORDS, "legal",
+         "⚖️ 법률/노무 상담 관련 문의는 컴플라이언스 가드레일에 의해 차단되었습니다."),
+        ("block_privacy", PRIVACY_KEYWORDS, "privacy",
+         "🔒 개인정보 수집이 필요한 문의는 컴플라이언스 가드레일에 의해 차단되었습니다."),
+    )
+
+    for toggle, keywords, topic, reason in checks:
+        if settings.get(toggle, True) and any(k in prompt for k in keywords):
+            if check_guardrail_intent(prompt, topic):
+                return True, reason
     return False, None
 
 
@@ -137,6 +158,17 @@ def render():
     current_setting = settings_res.data[0] if settings_res.data else {
         "tone": "친절한 상담원", "block_medical": True, "block_legal": True, "block_privacy": True, "strictness_level": 5
     }
+
+    # 진입 페르소나 선택: 사용자 웹앱의 진입 화면과 동일한 조건으로 검색 범위를 좁혀
+    # 테스트할 수 있게 한다(타 페르소나 문서가 컨텍스트를 잠식하는 문제 검증용).
+    persona_options = ["(선택 안 함 · 전체 검색)"] + [PERSONA_LABELS[k] for k in PERSONA_CATEGORIES]
+    label_to_key = {PERSONA_LABELS[k]: k for k in PERSONA_CATEGORIES}
+    chosen_label = st.selectbox(
+        "🧭 문의 유형(진입 카테고리) 선택",
+        persona_options,
+        help="사용자 웹앱 진입 화면에서 선택하는 값과 동일합니다. 선택 시 해당 분야 문서 안에서만 검색합니다.",
+    )
+    st.session_state["sim_persona"] = label_to_key.get(chosen_label)
 
     # 채팅 세션 유지 로직
     if "messages" not in st.session_state:
@@ -307,7 +339,20 @@ def render():
                         # 서버사이드 하이브리드 검색(RPC): 벡터 후보군(matches)은 기존과 동일하게
                         # 코사인 임계치 게이트에 사용하고, 키워드 후보군(keyword_matches)은
                         # "3구간"처럼 특정 값/고유명사 질의를 순위와 무관하게 구제하는 용도다.
-                        matches, keyword_matches = hybrid_search(normalized_prompt, user_vec, match_count=30)
+                        selected_persona = st.session_state.get("sim_persona")
+                        persona_categories = PERSONA_CATEGORIES.get(selected_persona) if selected_persona else None
+                        matches, keyword_matches = hybrid_search(
+                            normalized_prompt, user_vec, match_count=30, categories=persona_categories
+                        )
+
+                        # 사용자가 상황을 잘못 골랐을 수 있으므로, 필터 검색이 게이트를 통과하지
+                        # 못하면 전체 검색으로 한 번 더 시도한다(하드 필터로 답을 잃지 않게 하는 안전장치).
+                        gate_threshold = STRICTNESS_THRESHOLD.get(current_setting.get("strictness_level", 5), 0.70)
+                        if persona_categories and not (matches and matches[0][0] >= gate_threshold):
+                            wide_matches, wide_keywords = hybrid_search(normalized_prompt, user_vec, match_count=30)
+                            if wide_matches and wide_matches[0][0] >= gate_threshold:
+                                matches, keyword_matches = wide_matches, wide_keywords
+                                st.caption("🧭 선택하신 분야에서 답을 찾지 못해 전체 분야로 확장해 검색했습니다.")
 
                         # HITL 시맨틱 캐시: 관리자가 이미 검증한 모범 정답과 거의 동일한 질문이면,
                         # LLM 재호출 없이 검증 답변을 즉시 반환한다(속도/비용 절감 + 정답 신뢰도 보장).
@@ -336,7 +381,10 @@ def render():
                             # 임계치를 넘는 상위 문서(최대 5개)를 컨텍스트로 모아 LLM이 자연어 답변을 합성하게 한다.
                             # 행 단위(원자적) 청킹 이후에는 복합 질문 하나에 필요한 사실이 3개를 넘는 경우가 있어
                             # top-3로는 근거가 밀려날 수 있다(실측: 유사도 0.7344 청크가 top-3 밖으로 밀린 사례).
-                            top_matches = [m for m in matches[:5] if m[0] >= threshold]
+                            # 컨텍스트 포함 기준은 게이트보다 느슨하게 잡는다(단, 게이트보다
+                            # 엄격해지지 않도록 min으로 묶는다).
+                            ctx_threshold = min(threshold, CONTEXT_THRESHOLD)
+                            top_matches = [m for m in matches if m[0] >= ctx_threshold][:5]
 
                             # "1구간", "8구간"처럼 사용자가 특정 값을 콕 집어 물으면, 벡터 유사도만으로는
                             # 근거가 안 밀리기 어렵다(본인부담금 15개 구간처럼 서로 거의 같은 구조의 행이 많으면
