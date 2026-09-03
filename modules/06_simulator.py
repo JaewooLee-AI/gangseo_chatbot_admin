@@ -4,8 +4,8 @@ import time
 import datetime
 from core.db import supabase
 from core.rag_engine import (
-    generate_embedding, calculate_cosine_similarity, parse_embedding,
-    generate_chat_answer, ANSWER_GAP_MARKER,
+    generate_embedding, generate_chat_answer, ANSWER_GAP_MARKER,
+    normalize_query, extract_hitl_answer, hybrid_search,
 )
 
 def extract_contact_and_summary(message: str):
@@ -89,6 +89,18 @@ PRIVACY_KEYWORDS = ["주민등록번호", "주민번호", "계좌번호", "카�
 # 절대 유사도 값 자체가 임베딩 모델마다 다른 분포를 가지므로, 이 값은 Gemini 기준으로 보정한 것이다.
 # 다른 임베딩 제공자(OpenAI 등)로 전환 시 재보정이 필요할 수 있다.
 STRICTNESS_THRESHOLD = {1: 0.50, 2: 0.55, 3: 0.60, 4: 0.65, 5: 0.70}
+
+# HITL(관리자 검증 모범 정답)로 등록된 지식은 이미 사람이 확인한 고신뢰 답변이므로,
+# 일반 strictness 임계치보다 훨씬 높은 값으로 "거의 동일 질문"만 즉시 캐시 반환한다.
+# 오탐(다른 질문에 엉뚱한 검증 답변을 그대로 노출)을 막기 위한 보수적인 값이다.
+HITL_CACHE_THRESHOLD = 0.85
+
+# fallback_logs.failure_type 값: 오답 리뷰(Module 02)에서 실패 원인별 분포를 보고
+# 어떤 개선(질의 정규화 튜닝/지식 보강/가드레일 조정 등)이 가장 시급한지 데이터 기반으로
+# 판단할 수 있도록, 로그 적재 시점에 원인을 함께 태깅한다.
+FAILURE_TYPE_NO_MATCH = "no_match"                # 임계치를 넘는 문서를 아예 찾지 못함 (지식 공백)
+FAILURE_TYPE_LOW_CONFIDENCE = "low_confidence"    # 문서는 찾았지만 LLM이 근거 부족을 자인함
+FAILURE_TYPE_HUMAN_REQUESTED = "human_requested"  # 담당자 연결을 원했으나 연락처 미기재
 
 
 def check_guardrail_block(prompt: str, settings: dict):
@@ -260,13 +272,26 @@ def render():
                     # 연락처가 없어 counselor_inquiries에는 적재할 수 없지만, 질문 자체가
                     # 유실되지 않도록 fallback_logs에라도 남겨 관리자가 검토할 수 있게 한다.
                     supabase.table("fallback_logs").insert(
-                        {"user_query": prompt, "status": "pending"}, returning="minimal"
+                        {"user_query": prompt, "status": "pending", "failure_type": FAILURE_TYPE_HUMAN_REQUESTED},
+                        returning="minimal"
                     ).execute()
                     response_text = "불편을 드려 죄송합니다. 담당자가 확인 후 연락드릴 수 있도록 **성함과 연락처(예: 010-XXXX-XXXX)**를 함께 남겨주시거나, 상단의 **[📞 담당자에게 직접 메시지 전달하기]** 를 이용해 주세요."
 
             else:
-                # 0. 컴플라이언스 가드레일 우선 검사 (bot_settings 반영)
-                is_blocked, block_reason = check_guardrail_block(prompt, current_setting)
+                # 0-1. 질의 정규화: 오탈자 교정 + 축약된 단문을 완전한 문장으로 보완한다.
+                # 검색(임베딩) 직전에 항상 수행하며, 실패 시 원문이 그대로 반환되므로 안전하다.
+                with st.spinner("질문을 분석하는 중..."):
+                    # 방금 추가한 현재 사용자 메시지를 제외한, 그 이전까지의 대화가 "이전 맥락"이다.
+                    prior_history = st.session_state.messages[:-1]
+                    normalized_prompt = normalize_query(prompt, history=prior_history)
+
+                if normalized_prompt != prompt:
+                    st.caption(f"🔍 검색 질의 보정: \"{prompt}\" → \"{normalized_prompt}\"")
+
+                # 0-2. 컴플라이언스 가드레일 검사 (bot_settings 반영)
+                # 오탈자로 키워드 탐지가 회피되지 않도록 원문+보정문을 함께 검사한다.
+                guardrail_check_text = f"{prompt} {normalized_prompt}"
+                is_blocked, block_reason = check_guardrail_block(guardrail_check_text, current_setting)
 
                 if is_blocked:
                     response_text = (
@@ -278,24 +303,36 @@ def render():
                     # RAG 일반 응답 로직 (strictness_level → 코사인 유사도 임계치 반영)
                     with st.spinner("RAG 벡터 지식베이스 검색 중..."):
                         time.sleep(1.0)
-                        user_vec = generate_embedding(prompt)
-                        docs_res = supabase.table("rag_documents").select("content, category, embedding").execute()
-                        docs = docs_res.data if docs_res.data else []
+                        user_vec = generate_embedding(normalized_prompt)
+                        # 서버사이드 하이브리드 검색(RPC): 벡터 후보군(matches)은 기존과 동일하게
+                        # 코사인 임계치 게이트에 사용하고, 키워드 후보군(keyword_matches)은
+                        # "3구간"처럼 특정 값/고유명사 질의를 순위와 무관하게 구제하는 용도다.
+                        matches, keyword_matches = hybrid_search(normalized_prompt, user_vec, match_count=30)
 
-                        matches = []
-                        for doc in docs:
-                            # pgvector 컬럼은 실DB에서 문자열로 반환되므로 길이 비교 전에 파싱해야 한다.
-                            doc_vec = parse_embedding(doc.get("embedding"))
-                            if doc_vec and len(doc_vec) == len(user_vec):
-                                sim = calculate_cosine_similarity(user_vec, doc_vec)
-                                matches.append((sim, doc.get("content"), doc.get("category")))
-
-                        matches.sort(key=lambda x: x[0], reverse=True)
+                        # HITL 시맨틱 캐시: 관리자가 이미 검증한 모범 정답과 거의 동일한 질문이면,
+                        # LLM 재호출 없이 검증 답변을 즉시 반환한다(속도/비용 절감 + 정답 신뢰도 보장).
+                        hitl_cache_hit = next(
+                            (m for m in matches if m[0] >= HITL_CACHE_THRESHOLD and m[2] == "수동학습(HITL)"),
+                            None,
+                        )
 
                         strictness = current_setting.get("strictness_level", 5)
                         threshold = STRICTNESS_THRESHOLD.get(strictness, 0.70)
 
-                        if matches and matches[0][0] >= threshold:
+                        if hitl_cache_hit:
+                            cached_answer = extract_hitl_answer(hitl_cache_hit[1])
+                            response_text = (
+                                f"{cached_answer}\n\n"
+                                f"**[출처]:** 관리자 검증 답변 (HITL 캐시 · 유사도 {hitl_cache_hit[0]:.2f})"
+                            )
+                        elif (matches and matches[0][0] >= threshold) or keyword_matches:
+                            # 벡터 임계치를 통과했는지 여부와 별개로 진입한다: "3구간"처럼 벡터 유사도만으로는
+                            # 임계치를 넘는 문서가 하나도 없어도, pg_trgm 키워드 검색이 정확 매칭 문서를
+                            # 찾아왔다면 그것만으로도 답변을 시도한다(과거엔 벡터 게이트를 통과한 경우에만
+                            # 키워드 후보를 "보조로" 끼워 넣었을 뿐, 벡터가 전부 실패하면 키워드 매칭이
+                            # 있어도 구제하지 못했다).
+                            vector_gate_passed = bool(matches and matches[0][0] >= threshold)
+
                             # 임계치를 넘는 상위 문서(최대 5개)를 컨텍스트로 모아 LLM이 자연어 답변을 합성하게 한다.
                             # 행 단위(원자적) 청킹 이후에는 복합 질문 하나에 필요한 사실이 3개를 넘는 경우가 있어
                             # top-3로는 근거가 밀려날 수 있다(실측: 유사도 0.7344 청크가 top-3 밖으로 밀린 사례).
@@ -304,31 +341,38 @@ def render():
                             # "1구간", "8구간"처럼 사용자가 특정 값을 콕 집어 물으면, 벡터 유사도만으로는
                             # 근거가 안 밀리기 어렵다(본인부담금 15개 구간처럼 서로 거의 같은 구조의 행이 많으면
                             # 유사도 차이가 0.02~0.03 안에서 뒤섞여 원하는 구간이 top-5 밖으로 밀릴 수 있다).
-                            # 질문에 명시된 구간 번호가 있으면 순위와 무관하게 정확매칭으로 강제 포함한다.
-                            exact_terms = set(re.findall(r"\d+구간", prompt))
-                            if exact_terms:
+                            # hybrid_search()가 pg_trgm 키워드 유사도로 찾아온 보조 후보군을 순위와
+                            # 무관하게 강제 포함한다(과거의 \d+구간 정규식 하드코딩을 일반화한 것).
+                            if keyword_matches:
                                 already = {m[1] for m in top_matches}
-                                for m in matches:
-                                    if m[1] not in already and any(term in m[1] for term in exact_terms):
+                                for m in keyword_matches:
+                                    if m[1] not in already:
                                         top_matches.append(m)
                                         already.add(m[1])
 
                             context_chunks = [m[1] for m in top_matches]
                             source_categories = ", ".join(sorted({m[2] for m in top_matches}))
-                            top_score = top_matches[0][0]
+                            # 키워드 매칭 값은 트라이그램 유사도라 코사인 임계치와 스케일이 달라
+                            # "기준 대비 점수"로 표시하면 오해를 줄 수 있으므로, 벡터 게이트 통과 여부에
+                            # 따라 출처 표기 방식을 분리한다.
+                            top_score = top_matches[0][0] if top_matches else 0.0
 
                             gemini_provider = supabase.table("llm_providers").select("model_name").eq("vendor_id", "gemini").execute().data
                             gemini_model = (gemini_provider[0]["model_name"] if gemini_provider else None) or "gemini-3.1-flash-lite"
 
                             tone = current_setting.get("tone", "친절한 상담원")
-                            llm_answer = generate_chat_answer(prompt, context_chunks, tone, gemini_model)
+                            # 정규화된 질의를 사용한다: "그럼 2구간은요?" 같은 원문 그대로 넘기면
+                            # LLM이 무엇을 묻는지 다시 헷갈릴 수 있으므로, 이미 맥락이 풀린 독립형
+                            # 질문으로 답변을 생성해야 자연스럽다.
+                            llm_answer = generate_chat_answer(normalized_prompt, context_chunks, tone, gemini_model)
 
                             if llm_answer and is_no_answer_response(llm_answer):
                                 # 유사도 임계치는 통과했지만 LLM이 스스로(질문의 일부라도) "근거 자료에 없다"고
                                 # 밝힌 경우. 정상 답변처럼 보여주지 않고 HITL 검토 대상(fallback_logs)으로 등록한다.
                                 clean_answer = strip_gap_marker(llm_answer)
                                 supabase.table("fallback_logs").insert(
-                                    {"user_query": prompt, "status": "pending"}, returning="minimal"
+                                    {"user_query": prompt, "status": "pending", "failure_type": FAILURE_TYPE_LOW_CONFIDENCE},
+                                    returning="minimal"
                                 ).execute()
                                 response_text = (
                                     f"{clean_answer}\n\n"
@@ -336,16 +380,25 @@ def render():
                                     "빠른 확인이 필요하시면 **[📞 담당자에게 직접 메시지 전달하기]** 를 이용해 주세요."
                                 )
                             elif llm_answer:
-                                response_text = f"{llm_answer}\n\n**[출처]:** [{source_categories}] (유사도 Score: {top_score:.2f} / 기준 {threshold:.2f})"
+                                if vector_gate_passed:
+                                    response_text = f"{llm_answer}\n\n**[출처]:** [{source_categories}] (유사도 Score: {top_score:.2f} / 기준 {threshold:.2f})"
+                                else:
+                                    # 벡터 임계치는 못 넘었지만 키워드(트라이그램) 검색으로 구제된 경우.
+                                    # 트라이그램 점수는 코사인 임계치와 스케일이 달라 나란히 표기하면 오해를 주므로 분리한다.
+                                    response_text = f"{llm_answer}\n\n**[출처]:** [{source_categories}] (키워드 검색 매칭 · 벡터 유사도 기준 미달)"
                             else:
                                 # LLM 응답 생성 실패 시(키 미등록/API 오류) 원문 청크로 안전하게 대체
-                                top_match = matches[0]
-                                response_text = f"{top_match[1]}\n\n**[출처]:** [{top_match[2]}] (유사도 Score: {top_match[0]:.2f} / 기준 {threshold:.2f})"
+                                top_match = top_matches[0] if top_matches else matches[0]
+                                if vector_gate_passed:
+                                    response_text = f"{top_match[1]}\n\n**[출처]:** [{top_match[2]}] (유사도 Score: {top_match[0]:.2f} / 기준 {threshold:.2f})"
+                                else:
+                                    response_text = f"{top_match[1]}\n\n**[출처]:** [{top_match[2]}] (키워드 검색 매칭 · 벡터 유사도 기준 미달)"
                         else:
                             # 임계치 이상 문서가 하나도 없는, 가장 흔한 지식 공백 케이스.
                             # 이것도 HITL 검토 대상으로 남겨야 오답 리뷰(Module 02)에서 놓치지 않는다.
                             supabase.table("fallback_logs").insert(
-                                {"user_query": prompt, "status": "pending"}, returning="minimal"
+                                {"user_query": prompt, "status": "pending", "failure_type": FAILURE_TYPE_NO_MATCH},
+                                returning="minimal"
                             ).execute()
                             response_text = (
                                 "🚨 **[상담사 연결 권장]** 현재 엄격도 설정 기준(유사도 "

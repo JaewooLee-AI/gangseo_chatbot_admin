@@ -2,6 +2,15 @@ import streamlit as st
 from core.db import supabase
 from core.rag_engine import generate_embedding
 
+# 06_simulator.py가 fallback_logs 적재 시 함께 남기는 failure_type 값의 표시 라벨.
+# 값이 없는 레거시 로그(migration 004 적용 이전 데이터)는 "미분류"로 표기한다.
+FAILURE_TYPE_LABELS = {
+    "no_match": "🔍 지식 공백 (문서 자체가 없음)",
+    "low_confidence": "🤔 근거 불충분 (문서는 찾았으나 확신 못함)",
+    "human_requested": "📞 담당자 직접요청 (연락처 미기재)",
+}
+
+
 def render():
     st.markdown('<div class="ace-badge ace-badge-olive">MODULE 02</div>', unsafe_allow_html=True)
     st.title("🧠 오답 리뷰 및 AI 신규 학습 (HITL)")
@@ -26,6 +35,19 @@ def render():
         st.metric("📈 HITL 지식 커버리지율", f"{rate:.1f}%")
 
     st.divider()
+    st.subheader("🧭 실패유형 분포 (대기 중 기준)")
+    st.caption("어떤 원인의 오답이 가장 많은지를 보고, 지식베이스 보강/질의 정규화 튜닝/가드레일 조정 중 무엇을 우선할지 판단하는 데 활용하세요.")
+    if pending_logs:
+        type_counts = {}
+        for log in pending_logs:
+            type_counts[log.get("failure_type")] = type_counts.get(log.get("failure_type"), 0) + 1
+        type_cols = st.columns(len(type_counts))
+        for col, (ftype, count) in zip(type_cols, sorted(type_counts.items(), key=lambda x: -x[1])):
+            col.metric(FAILURE_TYPE_LABELS.get(ftype, "❔ 미분류(레거시 로그)"), f"{count}건")
+    else:
+        st.caption("대기 중인 오답 로그가 없어 집계할 항목이 없습니다.")
+
+    st.divider()
     st.subheader("📋 검토 필요한 미해결 질문 목록")
 
     if pending_logs:
@@ -35,7 +57,8 @@ def render():
             created_at = str(log.get("created_at") or "")[:19].replace("T", " ")
 
             with st.expander(f"🔴 [{created_at}] 사용자 질의: {user_query}", expanded=(idx == 0)):
-                st.markdown(f"**사용자질문 원문:** `{user_query}`")
+                ftype_label = FAILURE_TYPE_LABELS.get(log.get("failure_type"), "❔ 미분류(레거시 로그)")
+                st.markdown(f"**사용자질문 원문:** `{user_query}`  ·  **실패유형:** {ftype_label}")
                 st.caption("AI가 지식베이스 미비로 직접 대답하지 못하고 방어(Fallback)한 질문입니다.")
 
                 # 모범 정답 입력란

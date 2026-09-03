@@ -300,3 +300,130 @@ def generate_chat_answer(user_query: str, context_chunks: List[str], tone: str =
         pass
 
     return None
+
+
+def normalize_query(user_query: str, history: List[Dict[str, str]] = None,
+                     model_name: str = "gemini-3.1-flash-lite") -> str:
+    """
+    벡터 검색 직전에 사용자 질의를 정규화한다: 오탈자를 교정하고, 지나치게 축약된
+    단문("요금은?" 등)은 검색에 유리하도록 완전한 문장으로 보완한다.
+    history가 주어지면 "그럼 2구간은요?"처럼 이전 대화에 의존하는 생략/지시
+    표현도 이전 맥락을 반영해 독립적으로 검색 가능한 완전한 질문으로 풀어쓴다.
+    키가 없거나 호출이 실패하면 원문을 그대로 반환하여 검색 파이프라인이 항상
+    안전하게 동작하도록 한다.
+    """
+    api_key = _get_vault_key("gemini", "GEMINI_API_KEY")
+    if not api_key:
+        return user_query
+
+    # 최근 3턴(사용자+챗봇 최대 6개 메시지)만 참고한다. 너무 긴 이력은 프롬프트를
+    # 불필요하게 늘리고, 정규화 목적(직전 맥락의 생략 표현 해소)에는 오래된 이력이
+    # 오히려 잡음이 되기 쉽다.
+    history_lines = []
+    for m in (history or [])[-6:]:
+        content = (m.get("content") or "").strip()
+        if not content:
+            continue
+        role = "사용자" if m.get("role") == "user" else "챗봇"
+        history_lines.append(f"{role}: {content}")
+    history_text = "\n".join(history_lines) if history_lines else "(이전 대화 없음)"
+
+    prompt = f"""다음은 강서나눔돌봄센터 AI 챗봇에 입력된 사용자 질문입니다.
+검색 정확도를 높이기 위해 아래 규칙에 따라 질문을 다듬어 주세요.
+
+규칙:
+1. 오탈자나 띄어쓰기 오류를 자연스럽게 교정하세요.
+2. 지나치게 축약된 단문(예: "요금은?", "자격은요?")은 문맥상 자연스러운 완전한 문장으로 보완하세요.
+3. "그럼 2구간은요?", "거기는 얼마예요?"처럼 이전 대화를 참고해야 뜻이 통하는 생략/지시
+   표현이 있다면, [이전 대화]를 참고하여 무엇을 가리키는지 명확히 풀어써서 그 자체로
+   독립적으로 이해 가능한 질문으로 만드세요. 이전 대화가 없거나 현재 질문과 무관하면
+   이 규칙은 무시하세요.
+4. 질문의 의도나 의미를 절대 바꾸지 마세요. 새로운 정보를 추가하지 마세요.
+5. 다른 설명 없이, 교정된 질문 문장 하나만 출력하세요.
+
+[이전 대화]
+{history_text}
+
+[현재 사용자 질문]
+{user_query}"""
+
+    try:
+        resp = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            candidates = resp.json().get("candidates") or []
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                if parts and parts[0].get("text"):
+                    normalized = parts[0]["text"].strip().strip('"').strip("'")
+                    if normalized:
+                        return normalized
+    except requests.exceptions.RequestException:
+        pass
+
+    return user_query
+
+
+def extract_hitl_answer(content: str) -> str:
+    """
+    HITL 모범 정답 청크("질문: ...\\n답변: ...")에서 답변 부분만 추출한다.
+    시맨틱 캐시 히트 시, 질문 원문을 다시 노출하지 않고 답변만 보여주기 위함이다.
+    """
+    match = re.search(r"답변:\s*(.+)", content, re.DOTALL)
+    return match.group(1).strip() if match else content
+
+
+def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30):
+    """
+    검색을 서버사이드 RPC(admin_match_documents, supabase/005 참고)에 위임한다.
+    pgvector ivfflat 인덱스를 활용한 벡터 후보군과, pg_trgm 트라이그램 유사도로 찾은
+    키워드 후보군을 함께 받아온다. 후자는 "3구간"처럼 벡터 유사도만으로는 순위가
+    밀리기 쉬운 특정 값/고유명사 질의를 구제하기 위함으로, 기존에 앱 코드에 있던
+    \\d+구간 정규식 하드코딩을 일반화한 것이다.
+    문서 전량을 클라이언트로 내려받아 파이썬에서 코사인을 계산하지 않으므로 인덱스를
+    실제로 활용하고, 문서 수가 늘어나도 확장 가능하다.
+
+    RPC가 아직 배포되지 않았거나(마이그레이션 미적용) 호출이 실패하면, 기존 방식인
+    "전량 조회 후 클라이언트 사이드 코사인 계산"으로 안전하게 대체(fallback)한다.
+
+    반환값: (vector_matches, keyword_matches). 둘 다 (similarity, content, category)
+    튜플 리스트. vector_matches는 코사인 유사도 내림차순이며 기존 임계치 게이트 로직에
+    그대로 사용한다. keyword_matches는 임계치와 무관하게 강제 포함하는 보조 후보군이며,
+    폴백 경로에서는 항상 빈 리스트다.
+    """
+    from core.db import supabase
+
+    try:
+        res = supabase.rpc("admin_match_documents", {
+            "query_embedding": query_vec,
+            "query_text": query_text,
+            "match_count": match_count,
+        }).execute()
+        rows = res.data if res.data is not None else []
+        vector_matches = [
+            (r["similarity"], r["content"], r["category"])
+            for r in rows if r.get("match_source") == "vector"
+        ]
+        keyword_matches = [
+            (r["similarity"], r["content"], r["category"])
+            for r in rows if r.get("match_source") == "keyword"
+        ]
+        vector_matches.sort(key=lambda x: x[0], reverse=True)
+        return vector_matches, keyword_matches
+    except Exception:
+        pass
+
+    docs_res = supabase.table("rag_documents").select("content, category, embedding").execute()
+    docs = docs_res.data if docs_res.data else []
+    matches = []
+    for doc in docs:
+        doc_vec = parse_embedding(doc.get("embedding"))
+        if doc_vec and len(doc_vec) == len(query_vec):
+            sim = calculate_cosine_similarity(query_vec, doc_vec)
+            matches.append((sim, doc.get("content"), doc.get("category")))
+    matches.sort(key=lambda x: x[0], reverse=True)
+    return matches, []
