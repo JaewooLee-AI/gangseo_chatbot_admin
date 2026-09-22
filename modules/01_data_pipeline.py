@@ -31,6 +31,13 @@ def render():
 
             chunk_size = st.slider("청크(Chunk) 분할 크기 (글자 수, PDF/TXT에만 적용)", min_value=100, max_value=800, value=300, step=50)
 
+            replace_existing = st.checkbox(
+                "🔁 전체 교체 (해당 카테고리의 기존 청크를 삭제하고 새로 삽입)",
+                value=True,
+                help="확정본을 재업로드할 때 켜두면 예전 값과 새 값이 뒤섞여 검색되는 것을 막습니다. "
+                     "같은 카테고리에 여러 문서를 이어붙이는 경우에만 끄세요.",
+            )
+
             submit_upload = st.form_submit_button("🚀 문서 학습 및 벡터 DB 색인 실행")
 
         if submit_upload:
@@ -48,16 +55,25 @@ def render():
                             # 엑셀은 이미 행 단위로 정리된 지식이므로 문자 수 기반 청킹을 건너뛰고
                             # 1행 = 1청크로 임베딩하며, 시트명을 카테고리로 그대로 사용한다.
                             rows = extract_excel_rows(file_bytes)
+                            used_categories = sorted({r["category"] for r in rows})
+
+                            if replace_existing and used_categories:
+                                # 재업로드 시 예전 청크가 남아 새 값과 뒤섞여 검색되는 것을 막기 위해,
+                                # 새로 들어온 카테고리(시트)에 한해서만 기존 행을 지우고 다시 넣는다
+                                # (다른 시트/카테고리 데이터는 건드리지 않는다).
+                                supabase.table("rag_documents").delete().in_("category", used_categories).execute()
+
                             inserted_count = 0
                             for row in rows:
                                 vec = generate_embedding(row["content"])
                                 supabase.table("rag_documents").insert({
                                     "content": row["content"],
                                     "category": row["category"],
-                                    "embedding": vec
+                                    "embedding": vec,
+                                    "doc_type": row["doc_type"],
+                                    "verification": row["verification"],
                                 }).execute()
                                 inserted_count += 1
-                            used_categories = sorted({r["category"] for r in rows})
                             st.success(f"✅ {len(used_categories)}개 시트 카테고리({', '.join(used_categories)})로 총 {inserted_count}개의 지식 청크가 성공적으로 색인되었습니다!")
                             st.balloons()
                         else:

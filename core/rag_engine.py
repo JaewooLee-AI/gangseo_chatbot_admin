@@ -66,25 +66,44 @@ def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
     else:
         return f"지원되지 않는 파일 형식입니다: {filename}"
 
+# 운영/추적용 컬럼. 검색 대상 본문에 섞이면 임베딩이 오염되므로 content에서 제외하고
+# 별도 필드로 분리한다.
+#  - 유형:     A_사실(RAG가 답변할 지식) / B_접수(직원이 받아적을 폼 스펙)
+#  - 원본위치: 고객 원본 문서(chatbot_data.hwpx)의 표/행 위치. 각색·오기 추적용
+#  - 검증상태: 원본확인 / 고객확인필요
+METADATA_COLUMNS = ("유형", "원본위치", "검증상태")
+
+DOC_TYPE_FACT = "A_사실"
+DOC_TYPE_INTAKE = "B_접수"
+
+
 def extract_excel_rows(file_bytes: bytes) -> List[Dict[str, str]]:
     """
     엑셀은 이미 사람이 행 단위로 정리해 둔 원자적 지식 단위이므로,
     chunk_text()의 글자 수 기반 재분할을 거치지 않고 1행 = 1청크로 반환한다.
     시트명이 곧 카테고리가 된다.
+
+    METADATA_COLUMNS는 본문(content)에 넣지 않고 doc_type 등 별도 필드로 반환한다.
     """
     excel_file = io.BytesIO(file_bytes)
     sheets = pd.read_excel(excel_file, sheet_name=None)
     rows = []
     for sheet_name, df in sheets.items():
         # 시트명 앞의 일련번호를 떼고 공백으로 풀어써서, 임베딩이 주제 맥락을
-        # 더 잘 붙잡도록 한다("1_장애인활동지원_종사자" -> "장애인활동지원 종사자").
+        # 더 잘 붙잡도록 한다("1_활동지원_입사" -> "활동지원 입사").
         topic_label = re.sub(r"^\d+_", "", sheet_name).replace("_", " ")
         for _, row in df.iterrows():
-            row_items = [f"{col}: {val}" for col, val in row.items() if pd.notna(val)]
+            row_items = [
+                f"{col}: {val}" for col, val in row.items()
+                if pd.notna(val) and col not in METADATA_COLUMNS
+            ]
             if row_items:
+                doc_type = row.get("유형")
                 rows.append({
                     "category": sheet_name,
-                    "content": f"[{topic_label}] " + " | ".join(row_items)
+                    "content": f"[{topic_label}] " + " | ".join(row_items),
+                    "doc_type": doc_type if pd.notna(doc_type) else DOC_TYPE_FACT,
+                    "verification": row.get("검증상태") if pd.notna(row.get("검증상태")) else None,
                 })
     return rows
 
@@ -255,11 +274,17 @@ TONE_INSTRUCTIONS = {
 
 
 def generate_chat_answer(user_query: str, context_chunks: List[str], tone: str = "친절한 상담원",
-                          model_name: str = "gemini-3.1-flash-lite"):
+                          model_name: str = "gemini-3.1-flash-lite",
+                          has_intake: bool = False, has_unverified: bool = False):
     """
     검색된 RAG 컨텍스트(context_chunks)만 근거로 실제 LLM(Gemini)이 자연어 답변을 생성한다.
     사용 가능한 키가 없거나 호출이 실패하면 None을 반환하여, 호출부가 원문 청크 표시로
     안전하게 대체(fallback)할 수 있도록 한다.
+
+    has_intake=True면 컨텍스트에 B_접수(수집 필드 명세) 자료가 섞여 있다는 뜻이다.
+    이는 질문의 답이 아니라 접수 시 받아야 할 항목이므로, 사실처럼 나열하지 말고
+    "접수를 도와드리겠다"는 안내로 전환하도록 지시한다.
+    has_unverified=True면 아직 고객 확인을 받지 못한 임시 값이 포함된 것이므로 단정을 피한다.
     """
     api_key = _get_vault_key("gemini", "GEMINI_API_KEY")
     if not api_key:
@@ -268,11 +293,25 @@ def generate_chat_answer(user_query: str, context_chunks: List[str], tone: str =
     tone_instruction = TONE_INSTRUCTIONS.get(tone, TONE_INSTRUCTIONS["친절한 상담원"])
     context_text = "\n---\n".join(context_chunks)
 
+    extra_rules = ""
+    if has_intake:
+        extra_rules += (
+            '\n[참고 자료] 중 "접수 시 필요정보:"로 시작하는 항목은 사용자 질문에 대한 답이 아니라,\n'
+            "센터가 접수를 처리하기 위해 사용자에게 받아야 할 항목입니다. 이런 항목은 사실처럼\n"
+            "설명하지 말고, 접수를 도와드리겠다고 안내한 뒤 어떤 정보를 남겨주시면 되는지\n"
+            "자연스럽게 요청하는 문장으로 바꿔 쓰세요.\n"
+        )
+    if has_unverified:
+        extra_rules += (
+            "\n[참고 자료] 중 일부는 아직 센터의 최종 확인을 받지 못한 임시 내용입니다.\n"
+            "단정적으로 답하지 말고, 정확한 내용은 센터에 확인이 필요하다는 점을 함께 안내하세요.\n"
+        )
+
     prompt = f"""당신은 강서나눔돌봄센터의 AI 상담 챗봇입니다. {tone_instruction}
 아래 [참고 자료]에 있는 내용만 근거로 사용자 질문에 답변하세요.
 참고 자료에 없는 내용은 추측하지 말고 모른다고 답하세요.
 원문을 그대로 나열하지 말고, 사람이 읽기 편한 자연스러운 문장으로 정리해서 답변하세요.
-
+{extra_rules}
 질문의 일부라도 [참고 자료]에서 근거를 찾을 수 없다면, 답변을 다 작성한 뒤 맨 마지막 줄에
 반드시 "{ANSWER_GAP_MARKER}" 를 그대로(다른 말 없이 이 문자열만) 추가하세요.
 질문 전체가 [참고 자료]만으로 완전히 답변 가능하다면 이 마커를 붙이지 마세요.
@@ -338,7 +377,11 @@ def normalize_query(user_query: str, history: List[Dict[str, str]] = None,
    표현이 있다면, [이전 대화]를 참고하여 무엇을 가리키는지 명확히 풀어써서 그 자체로
    독립적으로 이해 가능한 질문으로 만드세요. 이전 대화가 없거나 현재 질문과 무관하면
    이 규칙은 무시하세요.
-4. 질문의 의도나 의미를 절대 바꾸지 마세요. 새로운 정보를 추가하지 마세요.
+4. 질문의 의도나 의미를 절대 바꾸지 마세요. 특히 원문에 없는 제도명·기관명을 새로
+   지어내 끼워넣지 마세요(예: "본인부담금 3구간은 얼마예요?"를 "장기요양급여 본인부담금
+   3구간은 얼마예요?"로 바꾸면 안 됩니다 — 원문에 없던 "장기요양급여"라는 제도명을
+   임의로 추가한 것입니다). 대화에서 이미 언급된 서비스명 정도만 보완하고, 근거 없는
+   새 정보는 추가하지 마세요.
 5. 다른 설명 없이, 교정된 질문 문장 하나만 출력하세요.
 
 [이전 대화]
@@ -447,17 +490,30 @@ def extract_hitl_answer(content: str) -> str:
 # 진입 시점에 사용자가 선택하는 페르소나 -> 검색 대상 카테고리(엑셀 시트명) 매핑.
 # 지식베이스가 이미 "서비스 종류 x 이용자/종사자" 축으로 구성되어 있어 그대로 대응된다.
 PERSONA_CATEGORIES = {
-    "활동지원_이용": ["2_장애인활동지원_이용자", "3_장애인활동지원_본인부담금"],
-    "활동지원_취업": ["1_장애인활동지원_종사자"],
-    "가사_이용": ["5_가사서비스_고객및요금"],
-    "가사_취업": ["4_가사서비스_종사자"],
+    # 원본 문서(chatbot_data.hwpx)의 계층을 그대로 따른다:
+    #   서비스(장애인활동지원/가사) x 관계(이용희망/이용중/취업희망/재직중)
+    # 이전 4분류는 "입사 문의"와 "재직자"를 한 카테고리에 묶어, 입사 희망자 질문에
+    # 사직·휴직 등 재직자 문서가 상위에 올라오는 오염이 있었다(실측: 5칸 중 3칸).
+    # 0_공통(센터 주소 등)은 모든 페르소나에 함께 포함한다.
+    "활동지원_이용희망": ["3_활동지원_이용신규", "5_활동지원_본인부담금", "0_공통"],
+    "활동지원_이용중": ["4_활동지원_이용중", "5_활동지원_본인부담금", "0_공통"],
+    "활동지원_취업희망": ["1_활동지원_입사", "0_공통"],
+    "활동지원_재직중": ["2_활동지원_재직", "0_공통"],
+    "가사_이용희망": ["8_가사_서비스요금", "0_공통"],
+    "가사_이용중": ["9_가사_민원", "8_가사_서비스요금", "0_공통"],
+    "가사_취업희망": ["6_가사_입사", "0_공통"],
+    "가사_재직중": ["7_가사_재직", "0_공통"],
 }
 
 PERSONA_LABELS = {
-    "활동지원_이용": "장애인활동지원 서비스를 이용하고 싶어요",
-    "활동지원_취업": "활동지원사로 일하고 싶어요",
-    "가사_이용": "가사서비스를 이용하고 싶어요",
-    "가사_취업": "가사관리사로 일하고 싶어요",
+    "활동지원_이용희망": "장애인활동지원 서비스를 새로 이용하고 싶어요",
+    "활동지원_이용중": "장애인활동지원 서비스를 이용 중입니다",
+    "활동지원_취업희망": "활동지원사로 일하고 싶어요",
+    "활동지원_재직중": "활동지원사로 근무 중입니다",
+    "가사_이용희망": "가사서비스를 새로 이용하고 싶어요",
+    "가사_이용중": "가사서비스를 이용 중입니다",
+    "가사_취업희망": "가사관리사로 일하고 싶어요",
+    "가사_재직중": "가사관리사로 근무 중입니다",
 }
 
 
@@ -479,12 +535,20 @@ def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30
     자신의 상황을 선택했을 때 타 페르소나 문서가 컨텍스트를 잠식하는 것을 막기 위함이다.
     None/빈 리스트면 기존과 동일하게 전체를 검색한다.
 
-    반환값: (vector_matches, keyword_matches). 둘 다 (similarity, content, category)
-    튜플 리스트. vector_matches는 코사인 유사도 내림차순이며 기존 임계치 게이트 로직에
-    그대로 사용한다. keyword_matches는 임계치와 무관하게 강제 포함하는 보조 후보군이며,
+    반환값: (vector_matches, keyword_matches). 둘 다
+    (similarity, content, category, doc_type, verification) 튜플 리스트.
+    앞 3개 위치는 기존 호출부와의 호환을 위해 그대로 유지한다.
+    vector_matches는 코사인 유사도 내림차순이며 기존 임계치 게이트 로직에 그대로 사용한다.
+    keyword_matches는 임계치와 무관하게 강제 포함하는 보조 후보군이며,
     폴백 경로에서는 항상 빈 리스트다.
     """
     from core.db import supabase
+
+    def _tup(r):
+        return (
+            r["similarity"], r["content"], r["category"],
+            r.get("doc_type") or DOC_TYPE_FACT, r.get("verification"),
+        )
 
     try:
         res = supabase.rpc("admin_match_documents", {
@@ -494,20 +558,16 @@ def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30
             "filter_categories": categories or None,
         }).execute()
         rows = res.data if res.data is not None else []
-        vector_matches = [
-            (r["similarity"], r["content"], r["category"])
-            for r in rows if r.get("match_source") == "vector"
-        ]
-        keyword_matches = [
-            (r["similarity"], r["content"], r["category"])
-            for r in rows if r.get("match_source") == "keyword"
-        ]
+        vector_matches = [_tup(r) for r in rows if r.get("match_source") == "vector"]
+        keyword_matches = [_tup(r) for r in rows if r.get("match_source") == "keyword"]
         vector_matches.sort(key=lambda x: x[0], reverse=True)
         return vector_matches, keyword_matches
     except Exception:
         pass
 
-    query = supabase.table("rag_documents").select("content, category, embedding")
+    query = supabase.table("rag_documents").select(
+        "content, category, embedding, doc_type, verification"
+    )
     if categories:
         query = query.in_("category", categories)
     docs_res = query.execute()
@@ -517,6 +577,9 @@ def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30
         doc_vec = parse_embedding(doc.get("embedding"))
         if doc_vec and len(doc_vec) == len(query_vec):
             sim = calculate_cosine_similarity(query_vec, doc_vec)
-            matches.append((sim, doc.get("content"), doc.get("category")))
+            matches.append((
+                sim, doc.get("content"), doc.get("category"),
+                doc.get("doc_type") or DOC_TYPE_FACT, doc.get("verification"),
+            ))
     matches.sort(key=lambda x: x[0], reverse=True)
     return matches, []

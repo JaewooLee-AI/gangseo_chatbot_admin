@@ -409,10 +409,17 @@ def render():
                             gemini_model = (gemini_provider[0]["model_name"] if gemini_provider else None) or "gemini-3.1-flash-lite"
 
                             tone = current_setting.get("tone", "친절한 상담원")
+                            # 컨텍스트에 접수 폼 명세(B_접수)나 미검증 내용이 섞였는지 알려,
+                            # 답변 톤을 각각 "접수 안내" / "확인 필요" 로 조정하게 한다.
+                            has_intake = any(m[3] == "B_접수" for m in top_matches if len(m) > 3)
+                            has_unverified = any(m[4] == "고객확인필요" for m in top_matches if len(m) > 4)
                             # 정규화된 질의를 사용한다: "그럼 2구간은요?" 같은 원문 그대로 넘기면
                             # LLM이 무엇을 묻는지 다시 헷갈릴 수 있으므로, 이미 맥락이 풀린 독립형
                             # 질문으로 답변을 생성해야 자연스럽다.
-                            llm_answer = generate_chat_answer(normalized_prompt, context_chunks, tone, gemini_model)
+                            llm_answer = generate_chat_answer(
+                                normalized_prompt, context_chunks, tone, gemini_model,
+                                has_intake=has_intake, has_unverified=has_unverified,
+                            )
 
                             if llm_answer and is_no_answer_response(llm_answer):
                                 # 유사도 임계치는 통과했지만 LLM이 스스로(질문의 일부라도) "근거 자료에 없다"고
