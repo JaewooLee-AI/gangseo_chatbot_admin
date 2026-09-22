@@ -394,7 +394,11 @@ def normalize_query(user_query: str, history: List[Dict[str, str]] = None,
         resp = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
             headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-            json={"contents": [{"parts": [{"text": prompt}]}]},
+            # temperature=0: 같은 질문이라도 매번 다르게 정규화되면(예: "얼마예요"가 호출마다
+            # 다른 문장으로 완성됨) 임베딩이 흔들려 임계치 근처에서 답변/폴백이 오락가락하는
+            # 원인이 된다(실측 확인). 정규화는 "창의적 답변"이 아니라 결정론적 교정이어야 하므로
+            # 온도를 0으로 고정한다.
+            json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0}},
             timeout=10,
         )
         if resp.status_code == 200:
@@ -515,6 +519,41 @@ PERSONA_LABELS = {
     "가사_취업희망": "가사관리사로 일하고 싶어요",
     "가사_재직중": "가사관리사로 근무 중입니다",
 }
+
+
+def infer_service_group(category: str):
+    """
+    카테고리(v4 엑셀 시트명)를 상위 서비스 그룹으로 매핑한다. "0_공통"은 어느
+    서비스에도 속하지 않는 공통 지식(센터 주소 등)이라 판단 재료에서 제외한다.
+    """
+    if "활동지원" in category:
+        return "활동지원"
+    if "가사" in category:
+        return "가사"
+    return None
+
+
+def detect_ambiguous_service(matches, top_n: int = 5, min_plausible: float = 0.55,
+                              max_gap: float = 0.05) -> bool:
+    """
+    페르소나(문의 유형)를 선택하지 않은 채 "얼마예요?", "신청하고 싶어요"처럼 짧고
+    일반적인 질문을 하면, 활동지원/가사 두 서비스의 문서가 거의 같은 유사도로 함께
+    검색되어 실제로는 근거가 빈약한 쪽으로 우연히 답이 나갈 수 있다(실측: "얼마예요"가
+    동일 질문인데도 실행할 때마다 답변/폴백을 오갔다 — 두 서비스 최고점이 0.01~0.02
+    차이라 임베딩의 미세한 흔들림에 결과가 좌우됨). 이 경우 추측해서 답하는 대신
+    어떤 서비스인지 먼저 물어보는 것이 더 안전하다.
+    """
+    best_by_group = {}
+    for m in matches[:top_n]:
+        group = infer_service_group(m[2])
+        if not group:
+            continue
+        if group not in best_by_group or m[0] > best_by_group[group]:
+            best_by_group[group] = m[0]
+    scores = sorted(best_by_group.values(), reverse=True)
+    if len(scores) < 2:
+        return False
+    return scores[0] >= min_plausible and scores[0] - scores[1] <= max_gap
 
 
 def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30,
