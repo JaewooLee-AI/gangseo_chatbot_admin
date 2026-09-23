@@ -6,7 +6,7 @@ from core.db import supabase
 from core.rag_engine import (
     generate_embedding, generate_chat_answer, ANSWER_GAP_MARKER,
     normalize_query, extract_hitl_answer, hybrid_search, check_guardrail_intent,
-    PERSONA_CATEGORIES, PERSONA_LABELS, detect_ambiguous_service,
+    PERSONA_CATEGORIES, PERSONA_LABELS, detect_ambiguous_service, COMMON_CATEGORY,
 )
 
 def extract_contact_and_summary(message: str):
@@ -409,12 +409,35 @@ def render():
                                         top_matches.append(m)
                                         already.add(m[1])
 
-                            context_chunks = [m[1] for m in top_matches]
+                            # 출처 표기와 점수는 "실제로 검색되어 뽑힌" 문서만 기준으로 삼는다.
+                            # 아래에서 항상 덧붙이는 공통 정보까지 넣으면 모든 답변에 0_공통이
+                            # 붙어 출처 표기가 무의미해진다.
                             source_categories = ", ".join(sorted({m[2] for m in top_matches}))
                             # 키워드 매칭 값은 트라이그램 유사도라 코사인 임계치와 스케일이 달라
                             # "기준 대비 점수"로 표시하면 오해를 줄 수 있으므로, 벡터 게이트 통과 여부에
                             # 따라 출처 표기 방식을 분리한다.
                             top_score = top_matches[0][0] if top_matches else 0.0
+
+                            # 센터 주소 같은 공통 정보(0_공통)는 질문과 겹치는 단어가 적어 유사도
+                            # 경쟁에서 구조적으로 밀린다(실측: "활동지원사 면접 언제 어디로
+                            # 찾아가면 되나요?"에서 주소 청크가 페르소나 적용 시 9위, 전체 검색에서는
+                            # 후보 30건 밖). 정작 "면접 장소"를 묻는 질문의 답이 여기 있어서 top-5
+                            # 컷에 잘리면 장소만 통째로 빠진 답변이 나간다. 분량이 매우 적으므로
+                            # (현재 1행) 순위와 무관하게 항상 컨텍스트에 포함한다.
+                            common_res = supabase.table("rag_documents").select(
+                                "content, category, doc_type, verification"
+                            ).eq("category", COMMON_CATEGORY).execute()
+                            already = {m[1] for m in top_matches}
+                            for row in (common_res.data or []):
+                                if row["content"] in already:
+                                    continue
+                                top_matches.append((
+                                    0.0, row["content"], row["category"],
+                                    row.get("doc_type") or "A_사실", row.get("verification"),
+                                ))
+                                already.add(row["content"])
+
+                            context_chunks = [m[1] for m in top_matches]
 
                             gemini_provider = supabase.table("llm_providers").select("model_name").eq("vendor_id", "gemini").execute().data
                             gemini_model = (gemini_provider[0]["model_name"] if gemini_provider else None) or "gemini-3.1-flash-lite"
