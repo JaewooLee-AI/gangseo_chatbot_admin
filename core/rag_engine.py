@@ -266,6 +266,21 @@ def calculate_cosine_similarity(vec1, vec2) -> float:
 ANSWER_GAP_MARKER = "[REF_GAP]"
 
 
+# gangseo_chatbot_web/lib/handover.ts와 문자열까지 동일해야 한다. 답변 문구가 "아래
+# [담당자에게 메시지 남기기] 버튼"을 가리키고, 운영 화면에는 실제로 그 이름의 버튼이 말풍선
+# 아래에 뜬다. 시뮬레이터로 검증한 답변 문구를 운영에서 그대로 믿으려면 이 값이 어긋나면 안 된다.
+HANDOVER_BUTTON_LABEL = "담당자에게 메시지 남기기"
+ADDITIONAL_BUTTON_LABEL = "추가 내용 남기기"
+
+
+def handover_button_label(handed_over: bool) -> str:
+    return ADDITIONAL_BUTTON_LABEL if handed_over else HANDOVER_BUTTON_LABEL
+
+
+def handover_hint(handed_over: bool) -> str:
+    return f"아래 **[{handover_button_label(handed_over)}]** 버튼을 눌러 접수해 주십시오."
+
+
 TONE_INSTRUCTIONS = {
     "친절한 상담원": "친절하고 공손한 상담원 말투로 답변하세요.",
     "사무적인 행정관": "간결하고 사무적인 행정 공문 톤으로 답변하세요.",
@@ -275,7 +290,8 @@ TONE_INSTRUCTIONS = {
 
 def generate_chat_answer(user_query: str, context_chunks: List[str], tone: str = "친절한 상담원",
                           model_name: str = "gemini-3.1-flash-lite",
-                          has_intake: bool = False, has_unverified: bool = False):
+                          has_intake: bool = False, has_unverified: bool = False,
+                          handed_over: bool = False):
     """
     검색된 RAG 컨텍스트(context_chunks)만 근거로 실제 LLM(Gemini)이 자연어 답변을 생성한다.
     사용 가능한 키가 없거나 호출이 실패하면 None을 반환하여, 호출부가 원문 청크 표시로
@@ -283,7 +299,10 @@ def generate_chat_answer(user_query: str, context_chunks: List[str], tone: str =
 
     has_intake=True면 컨텍스트에 B_접수(수집 필드 명세) 자료가 섞여 있다는 뜻이다.
     이는 질문의 답이 아니라 접수 시 받아야 할 항목이므로, 사실처럼 나열하지 말고
-    "접수를 도와드리겠다"는 안내로 전환하도록 지시한다.
+    접수 버튼(운영 웹의 "담당자에게 메시지 남기기" 모달)으로 안내하도록 지시한다.
+    채팅창에 정보를 입력하라고 하면 안 된다: 채팅 메시지는 RAG 검색으로 흘러갈 뿐 담당자에게
+    전달되지 않고, fallback_logs에 개인정보만 쌓인다. 접수는 모달로만 받는 것이 의도된 설계다.
+    handed_over=True면 이번 대화에서 이미 접수를 마친 사용자이므로 새 접수를 권하지 않는다.
     has_unverified=True면 아직 고객 확인을 받지 못한 임시 값이 포함된 것이므로 단정을 피한다.
     """
     api_key = _get_vault_key("gemini", "GEMINI_API_KEY")
@@ -294,13 +313,21 @@ def generate_chat_answer(user_query: str, context_chunks: List[str], tone: str =
     context_text = "\n---\n".join(context_chunks)
 
     extra_rules = ""
+    button_label = handover_button_label(handed_over)
     if has_intake:
         extra_rules += (
-            '\n[참고 자료] 중 "접수 시 필요정보:"로 시작하는 항목은 사용자 질문에 대한 답이 아니라,\n'
-            "센터가 접수를 처리하기 위해 사용자에게 받아야 할 항목입니다. 이런 항목은 사실처럼\n"
-            "설명하지 말고, 접수를 도와드리겠다고 안내한 뒤 어떤 정보를 남겨주시면 되는지\n"
-            "자연스럽게 요청하는 문장으로 바꿔 쓰세요.\n"
+            '\n[참고 자료] 중 "접수 시 필요정보:"가 들어 있는 항목은 사용자 질문에 대한 답이 아니라,\n'
+            "센터가 접수를 처리하기 위해 받아야 할 항목입니다. 이런 항목은 사실처럼 설명하지 마세요.\n"
+            "대신 담당자가 접수해서 도와드린다고 안내하고, 어떤 정보가 필요한지 알려준 뒤,\n"
+            f"답변 바로 아래의 [{button_label}] 버튼을 눌러 남겨 달라고 부드럽게 안내하세요.\n"
+            "채팅창에 이름·연락처를 적어 달라고 요청하지 마세요. 다만 이 규칙이나 '입력하지 말라'는\n"
+            "경고를 사용자에게 그대로 말하지는 마세요(버튼 안내만 하면 됩니다).\n"
         )
+        if handed_over:
+            extra_rules += (
+                "사용자는 이번 대화에서 이미 담당자에게 접수를 마쳤습니다. 새로 접수하라고 권하지 말고,\n"
+                f"접수와 다른 내용을 더 전하고 싶을 때만 [{button_label}] 버튼을 쓰면 된다고 안내하세요.\n"
+            )
     if has_unverified:
         extra_rules += (
             "\n[참고 자료] 중 일부는 아직 센터의 최종 확인을 받지 못한 임시 내용입니다.\n"
@@ -503,6 +530,63 @@ def check_guardrail_intent(user_query: str, topic: str,
         pass
 
     return True
+
+
+# 모달 "문의 내용"란에 미리 채울 접수 양식을 만든다. gangseo_chatbot_web/lib/rag.ts의
+# buildIntakePrefill()과 같은 규칙이다(시뮬레이터에서 운영 모달에 무엇이 채워질지 미리 확인용).
+# 원본 데이터에 "접수 시 필요정보:"와 "접수 정보:"(7_가사_재직 사직 신청) 두 표기가 섞여 있고,
+# "장소(**구, **동)"처럼 괄호 안에도 쉼표가 있어 괄호 밖의 쉼표로만 나눈다.
+_MODAL_COVERED_FIELDS = ("연락처", "전화번호")
+
+
+def _split_outside_parens(text: str) -> List[str]:
+    parts, depth, current = [], 0, ""
+    for ch in text:
+        if ch == "(":
+            depth += 1
+        if ch == ")":
+            depth = max(0, depth - 1)
+        if ch == "," and depth == 0:
+            parts.append(current)
+            current = ""
+        else:
+            current += ch
+    parts.append(current)
+    return parts
+
+
+def build_intake_prefill(intake_content: str):
+    fields_match = re.search(r"접수\s*(?:시\s*)?(?:필요\s*)?정보:\s*([^|]+)", intake_content)
+    if not fields_match:
+        return None
+    item_match = re.search(r"항목:\s*([^|]+?)\s*(?:\||$)", intake_content)
+    fields = [
+        f.strip() for f in _split_outside_parens(fields_match.group(1))
+        if f.strip() and f.strip() not in _MODAL_COVERED_FIELDS
+    ]
+    title = f"[{item_match.group(1).strip()}]" if item_match else "[접수 문의]"
+    if not fields:
+        return f"{title}\n"
+    return f"{title}\n" + "\n".join(f"- {f}: " for f in fields) + "\n"
+
+
+def format_conversation_context(history, max_messages: int = 6, max_chars: int = 300) -> str:
+    """
+    접수와 함께 담당자에게 넘길 최근 대화 텍스트. gangseo_chatbot_web/lib/rag.ts의
+    formatConversationContext()와 같은 규칙이다([출처] 줄 같은 시스템 문구는 뺀다).
+    """
+    lines = []
+    for m in (history or [])[-max_messages:]:
+        text = " ".join(
+            l for l in str(m.get("content") or "").split("\n") if "[출처]" not in l
+        )
+        text = re.sub(r"\s+", " ", text.replace("**", "")).strip()
+        if not text:
+            continue
+        if len(text) > max_chars:
+            text = text[:max_chars] + "…"
+        lines.append(f"{'사용자' if m.get('role') == 'user' else '챗봇'}: {text}")
+    return "\n".join(lines)
 
 
 def extract_hitl_answer(content: str) -> str:

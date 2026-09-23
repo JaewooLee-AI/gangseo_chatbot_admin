@@ -2,19 +2,37 @@ import streamlit as st
 import re
 import time
 import datetime
+import uuid
 from core.db import supabase
 from core.rag_engine import (
     generate_embedding, generate_chat_answer, ANSWER_GAP_MARKER,
     normalize_query, extract_hitl_answer, hybrid_search, check_guardrail_intent,
     PERSONA_CATEGORIES, PERSONA_LABELS, detect_ambiguous_service, COMMON_CATEGORY,
+    handover_hint, build_intake_prefill, format_conversation_context,
 )
+
+NO_CONTACT = "연락처 미기재 (원문 확인 필요)"
+
+
+def show_handover_notice(prefill=None):
+    """
+    운영 웹이라면 이 답변 말풍선 아래에 [담당자에게 메시지 남기기] 버튼이 뜨고, 누르면 모달이
+    prefill 값으로 미리 채워진다. 시뮬레이터에는 모달이 없으므로, 그 역할을 하는 위쪽
+    '담당자에게 직접 메시지 전달하기'를 안내하고 모달에 채워질 양식을 미리 보여준다.
+    """
+    st.caption("📎 운영 화면: 이 답변 아래에 접수 버튼이 표시됩니다. (시뮬레이터에서는 위의 '📞 담당자에게 직접 메시지 전달하기'가 그 역할을 합니다.)")
+    if prefill:
+        st.caption("📝 모달 '문의 내용'란에 미리 채워질 양식:")
+        st.code(prefill, language=None)
 
 def extract_contact_and_summary(message: str):
     """
     AI 분석을 시뮬레이션하여 발화 문장에서 연락처(전화번호/이메일) 및 핵심 문의 사항을 자동 추출합니다.
     """
     # 1. 전화번호 추출 패턴
-    phone_pattern = r'(01[016789]-?\d{3,4}-?\d{4}|02-?\d{3,4}-?\d{4}|0[3-6][1-5]-?\d{3,4}-?\d{4})'
+    # 음성 입력(STT) 결과처럼 띄어 쓴 번호("010 1234 5678")도 잡도록 공백 구분자를 허용한다
+    # (gangseo_chatbot_web/lib/rag.ts의 PHONE_PATTERN과 동일).
+    phone_pattern = r'(01[016789][-\s]?\d{3,4}[-\s]?\d{4}|02[-\s]?\d{3,4}[-\s]?\d{4}|0[3-6][1-5][-\s]?\d{3,4}[-\s]?\d{4})'
     phone_match = re.search(phone_pattern, message)
     contact = phone_match.group(0) if phone_match else "연락처 미기재 (원문 확인 필요)"
 
@@ -180,6 +198,12 @@ def render():
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+            if message.get("handover") is not None:
+                show_handover_notice(message["handover"] or None)
+
+    # 이번 대화에서 접수를 마쳤는지. 운영 웹과 같이 접수 후에도 대화는 계속되며,
+    # 안내 문구가 "추가 내용 남기기"로 바뀐다. 접수 후 대화는 기존 건에 붙이지 않는다.
+    handed_over = st.session_state.get("sim_handed_over", False)
 
     st.divider()
 
@@ -218,32 +242,51 @@ def render():
                     name, contact, summary = extract_contact_and_summary(user_msg.strip())
                     category = classify_inquiry(user_msg.strip())
 
-                    # Supabase `counselor_inquiries` 테이블에 기록!
+                    # 운영 웹의 /api/tickets와 같은 형식으로 적재한다: 문의 유형과 접수 직전
+                    # 대화를 함께 남겨 담당자가 맥락을 알 수 있게 하고(스키마 변경 없이 기존 칸 사용),
+                    # 원문 첫 줄에 접수번호를 넣어 CS 앱 검색으로 찾을 수 있게 한다.
+                    sim_persona = st.session_state.get("sim_persona")
+                    persona_label = PERSONA_LABELS.get(sim_persona) if sim_persona else None
+                    conversation = format_conversation_context(st.session_state.messages)
+                    inquiry_id = str(uuid.uuid4())
+                    receipt_no = inquiry_id[:8].upper()
+                    tags = " ".join(t for t in (
+                        "[추가 접수]" if handed_over else "",
+                        f"[{persona_label}]" if persona_label else "",
+                    ) if t)
+                    raw_message = f"접수번호: {receipt_no}\n{user_msg.strip()}"
+                    if conversation:
+                        raw_message += f"\n\n──── 접수 직전 챗봇 대화 (최근) ────\n{conversation}"
+
                     # anon 역할은 이 테이블을 SELECT할 권한이 없으므로(RLS),
                     # 기본값인 return=representation을 쓰면 "삽입 후 되읽기"에서
                     # RLS 위반으로 실패한다. 실제 값을 돌려받을 필요가 없으므로
                     # returning="minimal"로 삽입만 수행한다.
                     supabase.table("counselor_inquiries").insert({
+                        "id": inquiry_id,
                         "user_name": name,
                         "contact_info": contact,
-                        "inquiry_summary": summary,
-                        "raw_message": user_msg.strip(),
+                        "inquiry_summary": f"{tags} {summary}" if tags else summary,
+                        "raw_message": raw_message,
                         "input_type": input_type,
                         "category": category,
                         "status": "pending"
                     }, returning="minimal").execute()
 
-                    # 대화창에 어시스턴트 안내 추가
-                    confirm_text = f"""
-                    ✅ **[담당자 메시지 전달 완료]**
-                    메시지가 성공적으로 접수되어 담당자 대시보드(Supabase DB)에 기록되었습니다.
-                    - **AI 추출 연락처:** `{contact}`
-                    - **문의 분류:** `{category}`
-                    - **문의 요약:** {summary}
-                    - **접수 형태:** `{'🎙️ 음성' if input_type == 'voice' else '💬 텍스트'}`
-                    
-                    담당자가 확인 후 입력하신 연락처로 신속히 안내 드리겠습니다.
-                    """
+                    # 운영 웹의 접수 확인 카드와 같은 내용으로 안내한다.
+                    digits = re.sub(r"\D", "", contact)
+                    phone_display = f"끝자리 {digits[-4:]}" if len(digits) >= 4 else contact
+                    confirm_text = "\n".join([
+                        "✅ **추가 내용이 담당자에게 접수되었습니다.**" if handed_over
+                        else "✅ **담당자에게 접수되었습니다.**",
+                        "",
+                        f"- 접수번호: **{receipt_no}**",
+                        f"- 연락받으실 번호: {phone_display}",
+                        f"- 접수 내용: {summary}",
+                        "",
+                        "담당자가 확인한 뒤 남겨주신 번호로 연락드립니다. 기다리시는 동안 다른 궁금한 점도 편하게 물어보세요.",
+                    ])
+                    st.session_state.sim_handed_over = True
                     st.session_state.messages.append({"role": "user", "content": f"[담당자 메시지 전달 요청] {user_msg.strip()}"})
                     st.session_state.messages.append({"role": "assistant", "content": confirm_text})
                     
@@ -275,39 +318,34 @@ def render():
             or any(k in prompt for k in COMPLAINT_TRIGGER_KEYWORDS)
         )
 
+        # None이면 접수 버튼을 띄우지 않는 답변, 문자열("" 포함)이면 버튼을 띄우는 답변이다
+        # (문자열은 모달에 미리 채울 양식). 운영 웹의 X-Handover 응답 헤더에 해당한다.
+        response_handover = None
+
         with st.chat_message("assistant"):
             if wants_human:
-                name, contact, summary = extract_contact_and_summary(prompt)
-
-                # 전화번호가 들어있는 경우 즉시 Supabase 자동 적재
-                if contact != "연락처 미기재 (원문 확인 필요)":
-                    category = classify_inquiry(prompt)
-                    # 위와 동일한 이유로 returning="minimal" 사용 (anon은 SELECT 권한 없음)
-                    supabase.table("counselor_inquiries").insert({
-                        "user_name": name,
-                        "contact_info": contact,
-                        "inquiry_summary": summary,
-                        "raw_message": prompt,
-                        "input_type": "text",
-                        "category": category,
-                        "status": "pending"
-                    }, returning="minimal").execute()
-
-                    response_text = f"""
-                    📞 **[담당자 접수 완료]**
-                    입력하신 문장에서 연락처(`{contact}`)가 감지되어 담당자에게 즉시 전달(Supabase 적재)되었습니다.
-                    - **요약:** {summary}
-
-                    실무 담당자가 확인 후 빠른 시일 내에 연락드리겠습니다. 추가 문의가 있으시면 편하게 남겨주세요!
-                    """
-                else:
-                    # 연락처가 없어 counselor_inquiries에는 적재할 수 없지만, 질문 자체가
-                    # 유실되지 않도록 fallback_logs에라도 남겨 관리자가 검토할 수 있게 한다.
+                # 접수는 운영 웹의 "담당자에게 메시지 남기기" 모달로만 받는다(운영 웹과 동일).
+                # 예전에는 연락처가 보이면 채팅에서 바로 counselor_inquiries에 적재했는데,
+                # 그 경로는 성함을 받지 않았고 저장 실패도 확인하지 않았다.
+                _, contact, _ = extract_contact_and_summary(prompt)
+                if contact == NO_CONTACT:
+                    # 연락처가 없는 요청은 질문 자체가 유실되지 않도록 fallback_logs에 남긴다.
+                    # 연락처가 있는 문장은 개인정보가 로그에 쌓이지 않도록 남기지 않는다.
                     supabase.table("fallback_logs").insert(
                         {"user_query": prompt, "status": "pending", "failure_type": FAILURE_TYPE_HUMAN_REQUESTED},
                         returning="minimal"
                     ).execute()
-                    response_text = "불편을 드려 죄송합니다. 담당자가 확인 후 연락드릴 수 있도록 **성함과 연락처(예: 010-XXXX-XXXX)**를 함께 남겨주시거나, 상단의 **[📞 담당자에게 직접 메시지 전달하기]** 를 이용해 주세요."
+                if handed_over:
+                    response_text = (
+                        "이미 이번 대화에서 담당자에게 접수해 주셨습니다. 담당자가 확인 후 남겨주신 번호로 연락드릴 예정입니다.\n"
+                        f"추가로 전하실 내용이 있으시면 {handover_hint(True)}"
+                    )
+                else:
+                    response_text = (
+                        "담당자에게 연결해 드릴게요. 성함과 연락처, 문의 내용을 남겨주시면 담당자가 확인 후 연락드립니다.\n"
+                        f"{handover_hint(False)}"
+                    )
+                response_handover = prompt
 
             else:
                 # 0-1. 질의 정규화: 오탈자 교정 + 축약된 단문을 완전한 문장으로 보완한다.
@@ -335,8 +373,9 @@ def render():
                     response_text = (
                         f"🚨 **[Fallback 발동]** {block_reason}\n"
                         "상세한 안내는 보건소나 센터(02-2065-1584)로 직접 문의 부탁드리며, "
-                        "**[📞 담당자에게 직접 메시지 전달하기]** 를 통해 연락처를 남겨주시면 담당자가 안내해 드립니다."
+                        f"{handover_hint(handed_over)}"
                     )
+                    response_handover = ""
                 else:
                     # RAG 일반 응답 로직 (strictness_level → 코사인 유사도 임계치 반영)
                     with st.spinner("RAG 벡터 지식베이스 검색 중..."):
@@ -459,7 +498,13 @@ def render():
                             llm_answer = generate_chat_answer(
                                 normalized_prompt, context_chunks, tone, gemini_model,
                                 has_intake=has_intake, has_unverified=has_unverified,
+                                handed_over=handed_over,
                             )
+                            # 접수 폼 명세가 섞인 답변은 "버튼으로 남겨 달라"는 안내가 되므로
+                            # 접수 버튼을 띄우고, 가장 상위로 검색된 B_접수 항목으로 양식을 채운다.
+                            if has_intake:
+                                intake_row = next(m for m in top_matches if len(m) > 3 and m[3] == "B_접수")
+                                response_handover = build_intake_prefill(intake_row[1]) or ""
 
                             if llm_answer and is_no_answer_response(llm_answer):
                                 # 유사도 임계치는 통과했지만 LLM이 스스로(질문의 일부라도) "근거 자료에 없다"고
@@ -472,8 +517,10 @@ def render():
                                 response_text = (
                                     f"{clean_answer}\n\n"
                                     "🚨 **[상담사 연결 권장]** 지식베이스에서 확실한 근거를 찾지 못해 관리자 검토 목록에 등록했습니다. "
-                                    "빠른 확인이 필요하시면 **[📞 담당자에게 직접 메시지 전달하기]** 를 이용해 주세요."
+                                    f"빠른 확인이 필요하시면 {handover_hint(handed_over)}"
                                 )
+                                if response_handover is None:
+                                    response_handover = ""
                             elif llm_answer:
                                 if vector_gate_passed:
                                     response_text = f"{llm_answer}\n\n**[출처]:** [{source_categories}] (유사도 Score: {top_score:.2f} / 기준 {threshold:.2f})"
@@ -498,10 +545,15 @@ def render():
                             response_text = (
                                 "🚨 **[상담사 연결 권장]** 현재 엄격도 설정 기준(유사도 "
                                 f"{threshold:.2f} 이상)을 충족하는 지식베이스 정보를 찾지 못했습니다.\n"
-                                "상단의 **[📞 담당자에게 직접 메시지 전달하기]** 버튼을 통해 성함과 연락처를 남겨주시면 담당자가 즉시 확인 후 상담을 진행해 드립니다."
+                                f"{handover_hint(handed_over)}"
                             )
+                            response_handover = ""
 
                 response_text = apply_tone(response_text, current_setting.get("tone", "친절한 상담원"))
 
             st.markdown(response_text)
-            st.session_state.messages.append({"role": "assistant", "content": response_text})
+            if response_handover is not None:
+                show_handover_notice(response_handover or None)
+            st.session_state.messages.append(
+                {"role": "assistant", "content": response_text, "handover": response_handover}
+            )

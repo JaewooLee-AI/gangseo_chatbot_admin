@@ -69,7 +69,10 @@ def render():
                     st.markdown(f"**📞 AI 추출 연락처:** `{contact_info}`")
                     st.markdown(f"**📂 문의 분류:** `{category}`")
                     st.markdown(f"**📝 AI 문의 요약:** {summary}")
-                    st.markdown(f"**💬 원문 발화 메시지:**\n> {raw_msg}")
+                    # 원문에는 접수번호와 접수 직전 챗봇 대화가 여러 줄로 담겨 온다(운영 웹 /api/tickets).
+                    # 마크다운 인용(>)은 첫 문단만 인용되고 줄바꿈이 합쳐지므로 줄바꿈을 보존해 표시한다.
+                    st.markdown("**💬 원문 발화 메시지:**")
+                    st.text(raw_msg)
                     st.caption(f"접수 유형: {type_badge} | 접수 일시: {created_at}")
 
                     st.divider()
