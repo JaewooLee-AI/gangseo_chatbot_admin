@@ -315,7 +315,13 @@ def render():
                 with st.spinner("질문을 분석하는 중..."):
                     # 방금 추가한 현재 사용자 메시지를 제외한, 그 이전까지의 대화가 "이전 맥락"이다.
                     prior_history = st.session_state.messages[:-1]
-                    normalized_prompt = normalize_query(prompt, history=prior_history)
+                    # 선택한 문의 유형을 함께 넘긴다. "자격은?" 같은 단문을 어느 방향으로
+                    # 풀지가 이 값에 달려 있다(normalize_query 독스트링의 실측 사례 참고).
+                    sim_persona = st.session_state.get("sim_persona")
+                    normalized_prompt = normalize_query(
+                        prompt, history=prior_history,
+                        persona_label=PERSONA_LABELS.get(sim_persona) if sim_persona else None,
+                    )
 
                 if normalized_prompt != prompt:
                     st.caption(f"🔍 검색 질의 보정: \"{prompt}\" → \"{normalized_prompt}\"")
