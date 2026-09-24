@@ -226,6 +226,22 @@ def generate_embedding(text: str, dimension: int = 1536) -> List[float]:
 
     return _deterministic_fallback_embedding(text, dimension)
 
+def generate_embedding_strict(text: str, dimension: int = 1536) -> List[float]:
+    """
+    운영 지식(rag_documents)에 넣을 벡터 전용. 운영 웹은 질의를 항상 Gemini(gemini-embedding-001)로
+    임베딩하므로 저장 벡터도 반드시 같은 모델이어야 한다. generate_embedding()은 OpenAI 키가 있으면
+    OpenAI를, 실패하면 무작위 벡터를 조용히 반환해 검색을 망가뜨릴 수 있으므로(차원이 같아 걸러지지
+    않는다) 여기서는 Gemini만 쓰고, 실패하면 예외를 던져 아무것도 저장되지 않게 한다.
+    """
+    key = _get_vault_key("gemini", "GEMINI_API_KEY")
+    if not key:
+        raise RuntimeError("Gemini API 키가 등록되어 있지 않아 임베딩을 만들 수 없습니다.")
+    vec = _gemini_embedding(text, key, dimension)
+    if not vec or len(vec) != dimension:
+        raise RuntimeError("Gemini 임베딩 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.")
+    return vec
+
+
 def parse_embedding(value):
     """
     pgvector 컬럼은 실DB(PostgREST)에서 조회하면 '[0.1,0.2,...]' 형태의
@@ -456,13 +472,20 @@ def normalize_query(user_query: str, history: List[Dict[str, str]] = None,
    3구간은 얼마예요?"로 바꾸면 안 됩니다 — 원문에 없던 "장기요양급여"라는 제도명을
    임의로 추가한 것입니다). 대화에서 이미 언급된 서비스명과 [사용자가 선택한 문의 유형]은
    사용자가 직접 알려준 정보이므로 반영해도 되지만, 그 외 근거 없는 새 정보는 추가하지 마세요.
+   특히 사용자가 말하지 않았고 유형도 "(선택 안 함)"이라면 서비스 분야(장애인활동지원 / 가사서비스)나
+   직종(활동지원사 / 가사관리사)을 추측해서 넣지 마세요.
+   (나쁜 예: 유형 선택 없이 "교육기관 알려주세요" → "활동지원사 교육기관을 알려주세요.")
+   (옳은 예: 같은 상황에서 "교육기관을 알려주세요.")
 5. 질문에 분야(장애인활동지원 / 가사서비스)가 이미 드러나 있으면, 선택한 유형은 완전히
    무시하고 질문에 쓰인 분야만 남기세요. 두 분야를 한 문장에 절대 합치지 마세요.
    (나쁜 예: 유형이 "장애인활동지원 · 활동지원사로 일하고 싶어요"인 사용자의 "가사서비스
     비용은?"을 "장애인활동지원 서비스의 가사서비스 이용 비용은 얼마인가요?"로 바꾸는 것.
     실제로 존재하지 않는 조합이라 답을 찾지 못합니다.)
    (옳은 예: 같은 상황에서 "가사서비스 이용 비용은 얼마인가요?")
-6. 다른 설명 없이, 교정된 질문 문장 하나만 출력하세요.
+   "가사지원", "가사도우미", "청소"는 가사서비스 쪽 표현이므로 여기에 "활동지원사"를 붙이지 마세요.
+6. 질문으로 다듬을 수 없는 입력(의미 없는 글자 등)이면 원문을 그대로 출력하세요.
+   사용자에게 답하거나 되묻는 문장을 쓰지 마세요.
+7. 다른 설명 없이, 교정된 질문 문장 하나만 출력하세요.
 
 [사용자가 선택한 문의 유형]
 {persona_text}
@@ -696,6 +719,36 @@ SERVICE_MENTION_KEYWORDS = {
 }
 
 
+def is_meaningless_input(text: str) -> bool:
+    """한글 음절·영문·숫자가 하나도 없는 입력("ㄴㄴㄴㄴ", "??"). 운영 웹 isMeaninglessInput과 동일."""
+    return not re.search(r"[가-힣A-Za-z0-9]", text or "")
+
+
+# 챗봇 자신에 대한 짧은 질문·인사(운영 웹 isSmallTalk과 동일). 짧은 문장 전체가 이 형태일 때만.
+SMALL_TALK_PATTERNS = [
+    re.compile(r"^(너|넌|당신|니|거기)\s*(는|은)?\s*(누구|뭐|정체)"),
+    re.compile(r"^누구(세요|야|니|신가요|십니까)"),
+    re.compile(r"^(너|넌|당신)?\s*(챗봇|로봇|사람|AI|ai|인공지능)\s*(이야|이에요|인가요|이니|입니까|맞아|맞나요)"),
+    re.compile(r"^(안녕|안녕하세요|안녕하십니까|하이|hi|hello)$", re.I),
+]
+
+
+def is_small_talk(text: str) -> bool:
+    t = re.sub(r"[\s!?.~…]+$", "", (text or "").strip())
+    return len(t) <= 15 and any(p.search(t) for p in SMALL_TALK_PATTERNS)
+
+
+MEANINGLESS_REPLY = (
+    "말씀하신 내용을 이해하지 못했어요. 궁금하신 점을 조금 더 자세히 적어 주세요.\n"
+    '(예: "가사서비스 요금은 얼마예요?", "활동지원사 면접은 언제예요?")'
+)
+SMALL_TALK_REPLY = (
+    "안녕하세요. 저는 강서나눔돌봄센터 AI 상담 챗봇입니다.\n"
+    "장애인활동지원·가사서비스 이용 안내와 활동지원사·가사관리사 채용 안내 등을 도와드려요. "
+    "궁금하신 내용을 편하게 물어보세요."
+)
+
+
 def mentioned_services(text: str) -> set:
     return {g for g, kws in SERVICE_MENTION_KEYWORDS.items() if any(k in (text or "") for k in kws)}
 
@@ -727,6 +780,10 @@ def detect_ambiguous_service(matches, top_n: int = 5, min_plausible: float = 0.5
     차이라 임베딩의 미세한 흔들림에 결과가 좌우됨). 이 경우 추측해서 답하는 대신
     어떤 서비스인지 먼저 물어보는 것이 더 안전하다.
     """
+    # 가장 잘 맞는 문서가 공통 정보(센터 주소 등)면 서비스와 무관한 질문이므로 되묻지 않는다
+    # (실측: "면접 갈 때 주차 공간 있나요?"에 서비스를 되물었다 — 운영 웹과 동일, 2026-09-24).
+    if matches and matches[0][2] == COMMON_CATEGORY:
+        return False
     best_by_group = {}
     for m in matches[:top_n]:
         group = infer_service_group(m[2])
@@ -738,6 +795,16 @@ def detect_ambiguous_service(matches, top_n: int = 5, min_plausible: float = 0.5
     if len(scores) < 2:
         return False
     return scores[0] >= min_plausible and scores[0] - scores[1] <= max_gap
+
+
+def both_services_plausible(matches, top_n: int = 10, min_plausible: float = 0.55) -> bool:
+    """
+    기준을 넘는 문서는 없지만 두 서비스 모두에 그럴듯한 문서가 있는지(운영 웹 bothServicesPlausible과
+    동일). 서비스를 말하지 않은 짧은 질문은 "답 없음" 대신 어떤 서비스인지 되묻는다.
+    """
+    groups = {infer_service_group(m[2]) for m in matches[:top_n] if m[0] >= min_plausible}
+    groups.discard(None)
+    return len(groups) == 2
 
 
 def hybrid_search(query_text: str, query_vec: List[float], match_count: int = 30,

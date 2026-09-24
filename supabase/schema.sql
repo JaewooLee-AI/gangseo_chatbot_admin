@@ -39,6 +39,9 @@ create table if not exists fallback_logs (
     created_at timestamptz not null default now()
 );
 
+-- 이미 있던 테이블(구버전 스키마)에는 위 create table이 적용되지 않으므로 컬럼을 보강한다(010 참고).
+alter table fallback_logs add column if not exists golden_answer text;
+
 create index if not exists fallback_logs_status_idx on fallback_logs (status);
 
 -- ------------------------------------------------------------

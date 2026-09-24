@@ -1,6 +1,21 @@
 import streamlit as st
-from core.db import supabase
-from core.rag_engine import generate_embedding
+from core.db import supabase, is_mock_db
+from core.rag_engine import generate_embedding, generate_embedding_strict
+
+
+def _explain_failure(err: Exception) -> str:
+    """처리 실패 원인을 관리자가 조치할 수 있는 문장으로 바꾼다."""
+    if "golden_answer" in str(err):
+        return ("fallback_logs 테이블에 golden_answer 컬럼이 없습니다. "
+                "Supabase SQL Editor에서 supabase/010_fallback_logs_golden_answer.sql을 실행해 주세요.")
+    return str(err)
+
+
+def _resolve_log(log_id, golden_answer: str):
+    supabase.table("fallback_logs").update({
+        "status": "resolved",
+        "golden_answer": golden_answer,
+    }).eq("id", log_id).execute()
 
 # 06_simulator.py가 fallback_logs 적재 시 함께 남기는 failure_type 값의 표시 라벨.
 # 값이 없는 레거시 로그(migration 004 적용 이전 데이터)는 "미분류"로 표기한다.
@@ -73,22 +88,29 @@ def render():
                     if st.button("🚀 AI 신규 지식으로 즉시 주입 및 학습 반영", key=f"btn_save_{log_id}"):
                         if golden_answer.strip():
                             with st.spinner("Q&A 지식 청크 생성 및 Vector DB 편입 중..."):
-                                # 1. Q&A 텍스트 결합 청크 생성
+                                # 한쪽만 반영되지 않도록 순서를 정한다: ① 임베딩 → ② 로그 처리 → ③ 지식 편입.
+                                # 예전에는 지식을 먼저 넣고 로그를 갱신했는데, 로그 갱신이 실패하면
+                                # (운영 DB에 golden_answer 컬럼이 없어 실제로 매번 실패했다) 지식만 들어가고
+                                # 목록에는 그대로 남아 같은 답을 중복 주입할 수 있었다.
                                 combined_text = f"질문: {user_query}\n답변: {golden_answer.strip()}"
-                                vec = generate_embedding(combined_text)
-
-                                # 2. rag_documents 테이블에 즉각 편입
-                                supabase.table("rag_documents").insert({
-                                    "content": combined_text,
-                                    "category": "수동학습(HITL)",
-                                    "embedding": vec
-                                }).execute()
-
-                                # 3. fallback_logs 상태 업데이트
-                                supabase.table("fallback_logs").update({
-                                    "status": "resolved",
-                                    "golden_answer": golden_answer.strip()
-                                }).eq("id", log_id).execute()
+                                try:
+                                    # Mock 모드에는 실제 키가 없으므로 결정론적 벡터를 쓴다(데모 전용).
+                                    vec = generate_embedding(combined_text) if is_mock_db else generate_embedding_strict(combined_text)
+                                    _resolve_log(log_id, golden_answer.strip())
+                                except Exception as e:
+                                    st.error(f"🚨 처리하지 못했습니다(아무것도 저장되지 않음): {_explain_failure(e)}")
+                                    st.stop()
+                                try:
+                                    supabase.table("rag_documents").insert({
+                                        "content": combined_text,
+                                        "category": "수동학습(HITL)",
+                                        "embedding": vec,
+                                        "doc_type": "A_사실",
+                                    }).execute()
+                                except Exception as e:
+                                    supabase.table("fallback_logs").update({"status": "pending"}).eq("id", log_id).execute()
+                                    st.error(f"🚨 지식 편입에 실패해 처리를 되돌렸습니다: {e}")
+                                    st.stop()
 
                                 st.success("✅ 모범 정답이 Vector DB에 각인되었으며 챗봇 지식이 고도화되었습니다!")
                                 st.rerun()
@@ -97,10 +119,11 @@ def render():
 
                 with col2:
                     if st.button("❌ 단순 스팸/무시 처리", key=f"btn_ignore_{log_id}", type="secondary"):
-                        supabase.table("fallback_logs").update({
-                            "status": "resolved",
-                            "golden_answer": "[관리자 무시 처리]"
-                        }).eq("id", log_id).execute()
+                        try:
+                            _resolve_log(log_id, "[관리자 무시 처리]")
+                        except Exception as e:
+                            st.error(f"🚨 처리하지 못했습니다: {_explain_failure(e)}")
+                            st.stop()
                         st.info("해결 완료(무시) 처리되었습니다.")
                         st.rerun()
     else:

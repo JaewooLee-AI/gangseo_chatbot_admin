@@ -11,6 +11,8 @@ from core.rag_engine import (
     PERSONA_CATEGORIES, PERSONA_LABELS, detect_ambiguous_service, COMMON_CATEGORY,
     handover_hint, build_intake_prefill, format_conversation_context,
     user_named_single_service,
+    is_meaningless_input, is_small_talk, MEANINGLESS_REPLY, SMALL_TALK_REPLY,
+    both_services_plausible,
 )
 
 NO_CONTACT = "연락처 미기재 (원문 확인 필요)"
@@ -327,7 +329,12 @@ def render():
         response_handover = None
 
         with st.chat_message("assistant"):
-            if wants_human:
+            # 의미 없는 입력·챗봇 소개 요청은 검색·LLM 없이 답하고 HITL에도 남기지 않는다(운영 웹과 동일).
+            if is_meaningless_input(prompt):
+                response_text = MEANINGLESS_REPLY
+            elif is_small_talk(prompt):
+                response_text = SMALL_TALK_REPLY
+            elif wants_human:
                 # 접수는 운영 웹의 "담당자에게 메시지 남기기" 모달로만 받는다(운영 웹과 동일).
                 # 예전에는 연락처가 보이면 채팅에서 바로 counselor_inquiries에 적재했는데,
                 # 그 경로는 성함을 받지 않았고 저장 실패도 확인하지 않았다.
@@ -423,6 +430,14 @@ def render():
 
                         strictness = current_setting.get("strictness_level", 5)
                         threshold = STRICTNESS_THRESHOLD.get(strictness, 0.70)
+
+                        # 서비스를 말하지 않은 짧은 질문이 기준을 못 넘었는데 두 서비스 모두에
+                        # 그럴듯한 문서가 있으면 "답 없음" 대신 되묻는다(운영 웹과 동일).
+                        if (not is_ambiguous_service and not persona_categories
+                                and not (matches and matches[0][0] >= threshold) and not keyword_matches
+                                and not user_named_single_service(prompt, prior_history)
+                                and both_services_plausible(matches)):
+                            is_ambiguous_service = True
 
                         if is_ambiguous_service:
                             response_text = (
