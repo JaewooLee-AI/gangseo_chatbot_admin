@@ -5,10 +5,12 @@ import datetime
 import uuid
 from core.db import supabase
 from core.rag_engine import (
-    generate_embedding, generate_chat_answer, ANSWER_GAP_MARKER,
+    generate_embedding, generate_chat_answer,
     normalize_query, extract_hitl_answer, hybrid_search, check_guardrail_intent,
+    gap_reason, GAP_MARKER_PATTERN,
     PERSONA_CATEGORIES, PERSONA_LABELS, detect_ambiguous_service, COMMON_CATEGORY,
     handover_hint, build_intake_prefill, format_conversation_context,
+    user_named_single_service,
 )
 
 NO_CONTACT = "연락처 미기재 (원문 확인 필요)"
@@ -70,6 +72,8 @@ INQUIRY_CATEGORY_KEYWORDS = {
 # LLM이 근거 자료 부족을 스스로 인정할 때 쓰는 전형적인 표현들.
 # 유사도 임계치는 통과했지만 실제로는 "모른다"는 답변인 경우를 감지하기 위함.
 NO_ANSWER_PHRASES = [
+    "가지고 있지 않", "안내해 드리지 못", "정보가 없",
+    "나와 있지 않", "기재되어 있지 않", "포함되어 있지 않",
     "명시되어 있지 않", "정확한 답변을 드리기 어렵", "확인이 어렵", "알 수 없습니다",
     "안내해 드리기 어렵", "찾을 수 없습니다", "참고 자료에는", "제공된 자료에는",
     "자료에 포함되어 있지 않",
@@ -79,15 +83,15 @@ NO_ANSWER_PHRASES = [
 def is_no_answer_response(answer: str) -> bool:
     """
     LLM 답변이 사실상(또는 일부라도) '모른다'는 취지인지 판별한다.
-    1순위는 프롬프트로 지시한 고정 마커(ANSWER_GAP_MARKER) 탐지이며,
+    1순위는 프롬프트로 지시한 마커 "[REF_GAP: 답하지 못한 내용]" 탐지이며(내용이 빈 마커는 무시),
     NO_ANSWER_PHRASES 키워드 매칭은 마커를 빠뜨린 경우를 대비한 보조 수단이다.
     """
-    return ANSWER_GAP_MARKER in answer or any(p in answer for p in NO_ANSWER_PHRASES)
+    return gap_reason(answer) is not None or any(p in answer for p in NO_ANSWER_PHRASES)
 
 
 def strip_gap_marker(answer: str) -> str:
     """사용자에게 노출하기 전, 내부 신호용 마커를 답변 텍스트에서 제거한다."""
-    return answer.replace(ANSWER_GAP_MARKER, "").strip()
+    return GAP_MARKER_PATTERN.sub("", answer).strip()
 
 
 def classify_inquiry(message: str) -> str:
@@ -394,7 +398,12 @@ def render():
                         # 두 서비스 문서가 비슷한 점수로 뒤섞여 근거가 빈약한 쪽으로 우연히 답이
                         # 나갈 수 있다(실측: 동일 질문인데 실행할 때마다 답변/폴백이 오감).
                         # 이 경우 추측하지 않고 어떤 서비스인지 먼저 되묻는다.
-                        is_ambiguous_service = (not persona_categories) and detect_ambiguous_service(matches)
+                        # 사용자가 문장에서 분야를 직접 말했으면 되묻지 않는다(운영 웹과 동일).
+                        is_ambiguous_service = (
+                            (not persona_categories)
+                            and not user_named_single_service(prompt, prior_history)
+                            and detect_ambiguous_service(matches)
+                        )
 
                         # 사용자가 상황을 잘못 골랐을 수 있으므로, 필터 검색이 게이트를 통과하지
                         # 못하면 전체 검색으로 한 번 더 시도한다(하드 필터로 답을 잃지 않게 하는 안전장치).
@@ -498,7 +507,7 @@ def render():
                             llm_answer = generate_chat_answer(
                                 normalized_prompt, context_chunks, tone, gemini_model,
                                 has_intake=has_intake, has_unverified=has_unverified,
-                                handed_over=handed_over,
+                                handed_over=handed_over, original_query=prompt,
                             )
                             # 접수 폼 명세가 섞인 답변은 "버튼으로 남겨 달라"는 안내가 되므로
                             # 접수 버튼을 띄우고, 가장 상위로 검색된 B_접수 항목으로 양식을 채운다.
@@ -510,6 +519,7 @@ def render():
                                 # 유사도 임계치는 통과했지만 LLM이 스스로(질문의 일부라도) "근거 자료에 없다"고
                                 # 밝힌 경우. 정상 답변처럼 보여주지 않고 HITL 검토 대상(fallback_logs)으로 등록한다.
                                 clean_answer = strip_gap_marker(llm_answer)
+                                st.caption(f"🔎 근거 부족 판정 사유: {gap_reason(llm_answer) or '(답변 문구로 감지)'}")
                                 supabase.table("fallback_logs").insert(
                                     {"user_query": prompt, "status": "pending", "failure_type": FAILURE_TYPE_LOW_CONFIDENCE},
                                     returning="minimal"

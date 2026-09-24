@@ -265,6 +265,19 @@ def calculate_cosine_similarity(vec1, vec2) -> float:
 # 표현에 의존하지 않는 고정 토큰으로 근거 부족 여부를 신호하게 한다.
 ANSWER_GAP_MARKER = "[REF_GAP]"
 
+# 마커는 "[REF_GAP: 답하지 못한 내용]" 형식이다. 무엇을 못 답했는지 적지 못한 마커(빈 마커)는
+# 근거 부족으로 보지 않는다: 막연히 붙인 마커가 실행마다 2~4건씩 정답에 붙어 "상담사 연결
+# 권장"이 나갔다(실측 2026-09-24, gangseo_chatbot_web/lib/rag.ts gapReason과 동일 규칙).
+GAP_MARKER_PATTERN = re.compile(r"\[REF_GAP(?::\s*([^\]]*))?\]")
+
+
+def gap_reason(answer: str):
+    for m in GAP_MARKER_PATTERN.finditer(answer or ""):
+        reason = (m.group(1) or "").strip()
+        if reason:
+            return reason
+    return None
+
 
 # gangseo_chatbot_web/lib/handover.ts와 문자열까지 동일해야 한다. 답변 문구가 "아래
 # [담당자에게 메시지 남기기] 버튼"을 가리키고, 운영 화면에는 실제로 그 이름의 버튼이 말풍선
@@ -291,7 +304,7 @@ TONE_INSTRUCTIONS = {
 def generate_chat_answer(user_query: str, context_chunks: List[str], tone: str = "친절한 상담원",
                           model_name: str = "gemini-3.1-flash-lite",
                           has_intake: bool = False, has_unverified: bool = False,
-                          handed_over: bool = False):
+                          handed_over: bool = False, original_query: str = None):
     """
     검색된 RAG 컨텍스트(context_chunks)만 근거로 실제 LLM(Gemini)이 자연어 답변을 생성한다.
     사용 가능한 키가 없거나 호출이 실패하면 None을 반환하여, 호출부가 원문 청크 표시로
@@ -311,6 +324,21 @@ def generate_chat_answer(user_query: str, context_chunks: List[str], tone: str =
 
     tone_instruction = TONE_INSTRUCTIONS.get(tone, TONE_INSTRUCTIONS["친절한 상담원"])
     context_text = "\n---\n".join(context_chunks)
+
+    # 정규화가 짧은 질문을 풀어쓰며 묻지 않은 것을 덧붙이기도 한다("면접은?" → "면접 절차는
+    # 어떻게 되나요?"). 원문을 함께 주고 답변 범위와 근거 판단은 원문 기준으로 한다
+    # (gangseo_chatbot_web/lib/rag.ts generateChatAnswer와 동일, 2026-09-24 실측).
+    original = (original_query or "").strip()
+    separate = bool(original) and original != user_query.strip()
+    question_rule = (
+        "답변 범위와 근거 부족 판단은 [사용자 질문(원문)] 기준으로 하세요. [풀어쓴 질문]은 줄임말이나\n"
+        "이전 대화를 이해하기 위한 참고용이며, 풀어쓰면서 덧붙은 내용(예: 절차, 방법)은 답하지 못해도\n"
+        "근거 부족으로 보지 마세요.\n"
+    ) if separate else ""
+    question_block = (
+        f"[사용자 질문(원문)]\n{original}\n\n[풀어쓴 질문]\n{user_query}"
+        if separate else f"[사용자 질문]\n{user_query}"
+    )
 
     extra_rules = ""
     button_label = handover_button_label(handed_over)
@@ -338,22 +366,27 @@ def generate_chat_answer(user_query: str, context_chunks: List[str], tone: str =
 아래 [참고 자료]에 있는 내용만 근거로 사용자 질문에 답변하세요.
 참고 자료에 없는 내용은 추측하지 말고 모른다고 답하세요.
 원문을 그대로 나열하지 말고, 사람이 읽기 편한 자연스러운 문장으로 정리해서 답변하세요.
+사용자에게 "참고 자료", "자료에 따르면" 같은 내부 표현을 쓰지 마세요.
+안내할 수 없는 내용이 있을 때만, 그것이 무엇인지 구체적으로 밝히세요.
+질문에 모두 답했다면 "안내하기 어렵다"는 식의 문장을 덧붙이지 마세요.
 {extra_rules}
-질문의 일부라도 [참고 자료]에서 근거를 찾을 수 없다면, 답변을 다 작성한 뒤 맨 마지막 줄에
-반드시 "{ANSWER_GAP_MARKER}" 를 그대로(다른 말 없이 이 문자열만) 추가하세요.
-질문 전체가 [참고 자료]만으로 완전히 답변 가능하다면 이 마커를 붙이지 마세요.
-
+사용자가 직접 물은 내용 중 [참고 자료]로 답하지 못한 것이 있다면, 답변을 다 작성한 뒤 맨 마지막 줄에
+"[REF_GAP: 답하지 못한 내용]" 형식으로 무엇을 답하지 못했는지 짧게 적으세요(예: [REF_GAP: 주차 가능 여부]).
+답하지 못한 내용을 구체적으로 적을 수 없다면 마커를 붙이지 마세요.
+사용자가 물은 것에 모두 답했다면 붙이지 마세요. 인사말이나 장소·절차 같은 부가 안내를 덧붙였는지는
+판단과 상관없습니다. 접수 버튼으로 안내한 경우도 근거가 있는 답변이므로 붙이지 마세요.
+{question_rule}
 [참고 자료]
 {context_text}
 
-[사용자 질문]
-{user_query}"""
+{question_block}"""
 
     try:
         resp = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
             headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-            json={"contents": [{"parts": [{"text": prompt}]}]},
+            # temperature=0: 근거 부족 마커를 붙일지가 실행마다 흔들렸다(운영 웹과 동일하게 고정).
+            json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0}},
             timeout=20,
         )
         if resp.status_code == 200:
@@ -651,6 +684,37 @@ def infer_service_group(category: str):
     if "가사" in category:
         return "가사"
     return None
+
+
+# 사용자가 직접 쓴 문장에서 서비스 분야를 찾는다(gangseo_chatbot_web/lib/rag.ts의
+# mentionedServices / userNamedSingleService와 같은 규칙). 정규화된 질의는 쓰지 않는다:
+# 정규화가 사용자가 말하지 않은 서비스명을 추측해 넣는 경우가 있어("교육기관 알려주세요" →
+# "활동지원사 교육기관을 알려주세요."), 그 추측을 믿으면 되묻기의 목적이 무너진다.
+SERVICE_MENTION_KEYWORDS = {
+    "활동지원": ["활동지원", "활동 지원", "활동보조", "활보", "장애인활동"],
+    "가사": ["가사", "청소", "정리수납"],
+}
+
+
+def mentioned_services(text: str) -> set:
+    return {g for g, kws in SERVICE_MENTION_KEYWORDS.items() if any(k in (text or "") for k in kws)}
+
+
+def user_named_single_service(prompt: str, history=None) -> bool:
+    """
+    이번 질문(없으면 가장 최근의 이전 질문들)에 서비스가 하나만 언급됐으면 True.
+    이 경우 "어떤 서비스인가요?"라고 되묻지 않는다(실측: "활동지원사 교육긔관 어디에요"처럼
+    분야를 직접 말했는데도 되물었다 — 2026-09-24).
+    """
+    now = mentioned_services(prompt)
+    if now:
+        return len(now) == 1
+    prior = [m for m in (history or []) if m.get("role") == "user"][-3:]
+    for m in reversed(prior):
+        found = mentioned_services(m.get("content") or "")
+        if found:
+            return len(found) == 1
+    return False
 
 
 def detect_ambiguous_service(matches, top_n: int = 5, min_plausible: float = 0.55,
