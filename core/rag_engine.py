@@ -3,6 +3,7 @@ import os
 import re
 import math
 import random
+import time
 import pandas as pd
 import requests
 import streamlit as st
@@ -171,6 +172,23 @@ def _get_vault_key(vendor_id: str, env_key_name: str):
     return _get_secret(env_key_name)
 
 
+# Gemini가 일시적으로 거절하는 경우(503 "high demand", 429, 5xx, 네트워크 오류·시간 초과)는 잠시 쉬었다가
+# 한 번 더 시도한다(운영 웹 lib/rag.ts geminiFetch와 동일, 2026-09-24 실측 503 대응).
+_GEMINI_RETRYABLE = {429, 500, 502, 503, 504}
+
+
+def _gemini_post(url: str, api_key: str, payload: dict, timeout: int):
+    headers = {"x-goog-api-key": api_key, "Content-Type": "application/json"}
+    try:
+        resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        if resp.status_code not in _GEMINI_RETRYABLE:
+            return resp
+    except requests.exceptions.RequestException:
+        pass
+    time.sleep(0.8)
+    return requests.post(url, headers=headers, json=payload, timeout=timeout)
+
+
 def _openai_embedding(text: str, api_key: str):
     resp = requests.post(
         "https://api.openai.com/v1/embeddings",
@@ -184,10 +202,10 @@ def _openai_embedding(text: str, api_key: str):
 
 
 def _gemini_embedding(text: str, api_key: str, dimension: int):
-    resp = requests.post(
+    resp = _gemini_post(
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
-        headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-        json={
+        api_key,
+        {
             "content": {"parts": [{"text": text}]},
             "output_dimensionality": dimension,
         },
@@ -398,11 +416,11 @@ def generate_chat_answer(user_query: str, context_chunks: List[str], tone: str =
 {question_block}"""
 
     try:
-        resp = requests.post(
+        resp = _gemini_post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
-            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            api_key,
             # temperature=0: 근거 부족 마커를 붙일지가 실행마다 흔들렸다(운영 웹과 동일하게 고정).
-            json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0}},
+            {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0}},
             timeout=20,
         )
         if resp.status_code == 200:
@@ -497,14 +515,14 @@ def normalize_query(user_query: str, history: List[Dict[str, str]] = None,
 {user_query}"""
 
     try:
-        resp = requests.post(
+        resp = _gemini_post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
-            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            api_key,
             # temperature=0: 같은 질문이라도 매번 다르게 정규화되면(예: "얼마예요"가 호출마다
             # 다른 문장으로 완성됨) 임베딩이 흔들려 임계치 근처에서 답변/폴백이 오락가락하는
             # 원인이 된다(실측 확인). 정규화는 "창의적 답변"이 아니라 결정론적 교정이어야 하므로
             # 온도를 0으로 고정한다.
-            json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0}},
+            {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0}},
             timeout=10,
         )
         if resp.status_code == 200:
@@ -566,10 +584,10 @@ def check_guardrail_intent(user_query: str, topic: str,
 {user_query}"""
 
     try:
-        resp = requests.post(
+        resp = _gemini_post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
-            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-            json={"contents": [{"parts": [{"text": prompt}]}]},
+            api_key,
+            {"contents": [{"parts": [{"text": prompt}]}]},
             timeout=10,
         )
         if resp.status_code == 200:
